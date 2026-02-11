@@ -90,13 +90,13 @@ mod tests {
             writer.write_all(NEWLINE).unwrap();
 
             drop(writer);
+            drop(master);
         });
 
         // Wait for writer to finish
         println!("Wait for writer to finish...");
         writer_handle.join().unwrap();
 
-        drop(master);
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
