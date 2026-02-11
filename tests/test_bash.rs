@@ -50,8 +50,6 @@ mod tests {
         let mut reader = master.try_clone_reader().unwrap();
         let master_writer = master.take_writer().unwrap();
 
-        drop(master);
-
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
             let mut buffer = [0u8; 1024];
@@ -124,6 +122,8 @@ mod tests {
         // Wait for writer to finish
         println!("Wait for writer to finish...");
         writer_handle.join().unwrap();
+
+        drop(master);
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
