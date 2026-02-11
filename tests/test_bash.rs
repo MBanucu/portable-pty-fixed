@@ -58,7 +58,7 @@ mod tests {
                     Ok(n) => {
                         let mut output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         if output.contains("\x1b[6n") {
-                            print!("Received cursor position request, sending response...");
+                            println!("Received cursor position request, sending response...");
                             if let Ok(mut w) = reader_writer.lock() {
                                 let _ = w.write_all(b"\x1b[1;1R"); // Ignore errors for simplicity
                             }
