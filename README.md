@@ -115,7 +115,7 @@ The meaning of this is (quote from Grok):
 
 See
 - [GitHub action](https://github.com/MBanucu/portable-pty-fixed/actions/runs/21918807635/job/63293148222?pr=3)
-- [PR](https://github.com/MBanucu/portable-pty-fixed/pull/3).
+- [PR](https://github.com/MBanucu/portable-pty-fixed/pull/3)
 
 ### Drop the master before child exited
 If you drop the master before child exited then it is the same behavior as dropping the master too early.
@@ -139,7 +139,7 @@ If you drop the master before child exited then it is the same behavior as dropp
 14	52	4
 15	108	l
 ```
-- The exit code is: `3221225786` = `0xC000013A` = `STATUS_CONTROL_C_EXIT` = `Ctrl+C`.
+- The exit code of the child is: `3221225786` = `0xC000013A` = `STATUS_CONTROL_C_EXIT` = `Ctrl+C`.
 - The reader pipe closes.
 
 See
