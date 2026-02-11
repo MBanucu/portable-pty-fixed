@@ -20,8 +20,14 @@ mod tests {
             })
             .unwrap();
 
+        #[cfg(windows)]
+        const BASH_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
+
+        #[cfg(not(windows))]
+        const BASH_COMMAND: &str = "bash";
+
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
-        let cmd = CommandBuilder::new("bash");
+        let cmd = CommandBuilder::new(BASH_COMMAND);
         let mut child = pair.slave.spawn_command(cmd).unwrap();
 
         drop(pair.slave);

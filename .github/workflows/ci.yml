@@ -23,12 +23,12 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
-    - name: install bash
-      if: runner.os == 'Windows'
-      run: |
-        choco install git -y --params '/GitAndUnixToolsOnPath /NoAutoCrlf'
-        $env:Path += ";C:\Program Files\Git\usr\bin"
-        bash --version
+    # - name: install bash
+    #   if: runner.os == 'Windows'
+    #   run: |
+    #     choco install git -y --params '/GitAndUnixToolsOnPath /NoAutoCrlf'
+    #     $env:Path += ";C:\Program Files\Git\usr\bin"
+    #     bash --version
 
     - name: Run tests
       run: cargo test
