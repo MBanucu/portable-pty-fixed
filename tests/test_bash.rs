@@ -7,6 +7,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use std::thread;
+    use std::time::Duration;
     
 
     #[test]
@@ -74,6 +75,7 @@ mod tests {
             }
         });
 
+        thread::sleep(Duration::from_millis(500));
         
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
@@ -83,12 +85,12 @@ mod tests {
         master_writer.write_all(b"exit").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
 
+        drop(master_writer); // Close the writer to signal EOF to the reader thread
         
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
         
-        drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to ensure the reader thread can exit
 
 
