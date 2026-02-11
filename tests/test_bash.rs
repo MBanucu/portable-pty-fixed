@@ -112,11 +112,12 @@ mod tests {
         // Wait for Bash to exit
         let status = child.lock().unwrap().wait().unwrap();
 
-        const STATUS_CONTROL_C_EXIT: u32 = 0xC000013A;
+        // const STATUS_CONTROL_C_EXIT: u32 = 0xC000013A;
 
         assert!(
-            status.exit_code() == STATUS_CONTROL_C_EXIT || status.success(),
-            "Bash exited with status: {:?}, output: {}",
+            status.success(),
+            "{} exited with status: {:?}, output: {}",
+            BASH_COMMAND,
             status,
             collected_output
         );
