@@ -131,5 +131,10 @@ mod tests {
             collected_output,
             hello_count
         );
+        assert!(
+            collected_output.contains("exit"),
+            "Output was: {:?}, expected to contain 'exit'",
+            collected_output
+        );
     }
 }
