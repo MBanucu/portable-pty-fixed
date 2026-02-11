@@ -156,7 +156,7 @@ Observation:
 So if you are on Linux or macOS then you do not have to do anything. If you run `bash` or `sh` then the termination of `bash` and `sh` will close the pipe automatically and no manual dropping measures have to be taken to close the pipe and be sure to get all the last bits of information out of the reader.
 
 The only problem is if you have to deal with Windows (`ConPTY`). Then the sequence is as follows:
-- Make sure that the child exited, either by polling or by block-waiting.
-- Drop the master or the writer to close the reader pipe.
+1. Make sure that the child exited, either by polling or by block-waiting.
+2. Drop the master or the writer to close the reader pipe.
 
 Hopefully there is only set an EOF signal at the end of the reader pipe by dropping master or writer and not signaling something like `STATUS_CONTROL_C_EXIT` to the pipe to make sure that a slow reader thread that has not yet fetched all the last bits of the reader pipe can read the pipe to the end. I will probably soon make this test with a thread that is on purpose slow and test if this race condition exists and spits into the soup or not.
