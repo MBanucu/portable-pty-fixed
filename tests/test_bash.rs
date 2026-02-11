@@ -44,8 +44,13 @@ mod tests {
                 match reader.read(&mut buffer) {
                     Ok(0) => break, // EOF
                     Ok(n) => {
+                        // add a for loop that printlns every character as ascii code
+                        // for debugging purposes
+                        for (i, byte) in buffer[..n].iter().enumerate() {
+                            println!("{}\t{}\t{}", i, byte, *byte as char);
+                        }
                         let output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                        print!("{}", output); // Print to stdout for visibility.
+                        // print!("{}", output); // Print to stdout for visibility.
                         tx.send(output).unwrap();
                     }
                     Err(e) => {
@@ -79,12 +84,12 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
-        // add a for loop that printlns every character as ascii code
-        for c in collected_output.chars() {
-            println!("{}\t{}", c as u8, c);
-        }
-
-        assert!(status.success(), "Bash exited with status: {:?}, output: {}", status, collected_output);
+        assert!(
+            status.success(),
+            "Bash exited with status: {:?}, output: {}",
+            status,
+            collected_output
+        );
 
         // Wait for reader to finish
         reader_handle.join().unwrap();
