@@ -79,12 +79,12 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
-        assert!(
-            status.success(),
-            "Bash exited with status: {:?}, output: {}",
-            status,
-            collected_output
-        );
+        // add a for loop that printlns every character as ascii code
+        for c in collected_output.chars() {
+            println!("{}\t{}", c as u8, c);
+        }
+
+        assert!(status.success(), "Bash exited with status: {:?}, output: {}", status, collected_output);
 
         // Wait for reader to finish
         reader_handle.join().unwrap();
