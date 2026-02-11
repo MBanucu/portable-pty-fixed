@@ -44,11 +44,13 @@ mod tests {
         let child_for_reader = child.clone();
 
         drop(slave);
-
+        
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = master.try_clone_reader().unwrap();
         let master_writer = master.take_writer().unwrap();
+
+        drop(master);
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
@@ -76,7 +78,6 @@ mod tests {
                             .is_some()
                         {
                             println!("Child process has exited, reading remaining output...");
-                            drop(master);
                             let mut vec = vec![];
                             let len = reader.read_to_end(&mut vec);
                             println!("Sending last chunk");
@@ -133,7 +134,7 @@ mod tests {
         let mut collected_output = String::new();
         while let Ok(chunk) = rx.try_recv() {
             collected_output.push_str(&chunk);
-        }    
+        }
 
         // Wait for Bash to exit
         let status = child.lock().unwrap().wait().unwrap();
