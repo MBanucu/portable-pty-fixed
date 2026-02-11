@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
-    use std::io::{Read, Write};
-    use std::sync::mpsc::{channel};
-    use std::thread;
     use regex::Regex;
+    use std::io::{Read, Write};
+    use std::sync::mpsc::channel;
+    use std::thread;
 
     #[test]
     fn test_bash_example() {
@@ -49,9 +49,7 @@ mod tests {
                         tx.send(output).unwrap();
                     }
                     Err(e) => {
-                        tx
-                            .send(format!("Error reading from PTY: {}", e))
-                            .unwrap();
+                        tx.send(format!("Error reading from PTY: {}", e)).unwrap();
                         break;
                     }
                 }
@@ -72,10 +70,6 @@ mod tests {
 
         // Wait for Bash to exit
         let status = child.wait().unwrap();
-        assert!(status.success(), "Bash exited with status: {:?}", status);
-
-        // Wait for reader to finish
-        reader_handle.join().unwrap();
 
         // Collect all output
         let mut collected_output = String::new();
@@ -83,12 +77,19 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
+        assert!(status.success(), "Bash exited with status: {:?}, output: {}", status, collected_output);
+
+        // Wait for reader to finish
+        reader_handle.join().unwrap();
+
         // Assert that the output contains the expected echo result
         // Expected: "echo hello" echoed back (due to terminal echo), then "hello"
         // But with PS1 empty and no rc, it should be minimal.
         // We check for "hello" appearing twice (command echo + output)
         assert!(
-            Regex::new(r"hello.*\n.*hello").unwrap().is_match(&collected_output),
+            Regex::new(r"hello.*\n.*hello")
+                .unwrap()
+                .is_match(&collected_output),
             "Output was: {:?}",
             collected_output
         );
