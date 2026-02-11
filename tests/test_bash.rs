@@ -115,6 +115,8 @@ mod tests {
             // Send exit
             writer.write_all(b"exit").unwrap();
             writer.write_all(NEWLINE).unwrap();
+
+            drop(writer);
         });
 
         // Wait for writer to finish
