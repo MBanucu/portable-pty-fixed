@@ -1,10 +1,11 @@
 #[cfg(test)]
 mod tests {
     use ntest::timeout;
-    use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
+    use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
     use std::io::{Read, Write};
     use std::sync::mpsc::channel;
-    
+    use std::sync::{Arc, Mutex};
+
     use std::thread;
     use std::time::Duration;
 
@@ -23,6 +24,8 @@ mod tests {
             })
             .unwrap();
 
+        let PtyPair { master, slave } = pair;
+
         #[cfg(windows)]
         const BASH_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
 
@@ -37,14 +40,15 @@ mod tests {
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
         let cmd = CommandBuilder::new(BASH_COMMAND);
-        let mut child = pair.slave.spawn_command(cmd).unwrap();
+        let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
+        let child_for_reader = child.clone();
 
-        drop(pair.slave);
+        drop(slave);
 
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
-        let mut reader = pair.master.try_clone_reader().unwrap();
-        let master_writer = pair.master.take_writer().unwrap();
+        let mut reader = master.try_clone_reader().unwrap();
+        let master_writer = master.take_writer().unwrap();
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
@@ -53,14 +57,40 @@ mod tests {
                 match reader.read(&mut buffer) {
                     Ok(0) => break, // EOF
                     Ok(n) => {
-                        let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         // add a for loop that printlns every character as ascii code
                         // for debugging purposes
                         for (i, byte) in buffer[..n].iter().enumerate() {
                             println!("{}\t{}\t{}", i, byte, *byte as char);
                         }
+                        let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         if !output.is_empty() {
                             tx.send(output).unwrap();
+                        }
+
+                        // windows workaround
+                        if child_for_reader
+                            .lock()
+                            .unwrap()
+                            .try_wait()
+                            .unwrap()
+                            .is_some()
+                        {
+                            drop(master);
+                            let mut vec = vec![];
+                            let len = reader.read_to_end(&mut vec);
+                            println!("Sending last chunk");
+                            if let Ok(n) = len {
+                                // add a for loop that printlns every character as ascii code
+                                // for debugging purposes
+                                for (i, byte) in vec[..n].iter().enumerate() {
+                                    println!("{}\t{}\t{}", i, byte, *byte as char);
+                                }
+                                let output = String::from_utf8_lossy(&vec[..n]).to_string();
+                                if !output.is_empty() {
+                                    tx.send(output).unwrap();
+                                }
+                            }
+                            break;
                         }
                     }
                     Err(e) => {
@@ -88,27 +118,31 @@ mod tests {
         });
 
         // Wait for writer to finish
+        println!("Wait for writer to finish...");
         writer_handle.join().unwrap();
 
-        // Wait for Bash to exit
-        let status = child.wait().unwrap();
-
         // Collect all output from the channel
+        println!("Collecting output from the channel...");
         let mut collected_output = String::new();
         while let Ok(chunk) = rx.try_recv() {
             collected_output.push_str(&chunk);
         }
 
+        // Wait for reader to finish
+        println!("Wait for reader to finish...");
+        reader_handle.join().unwrap();
+
+        // Wait for Bash to exit
+        let status = child.lock().unwrap().wait().unwrap();
+
+        const STATUS_CONTROL_C_EXIT: u32 = 0xC000013A;
+
         assert!(
-            status.exit_code() == 3221225786 || status.success(),
+            status.exit_code() == STATUS_CONTROL_C_EXIT || status.success(),
             "Bash exited with status: {:?}, output: {}",
             status,
             collected_output
         );
-
-        // Wait for reader to finish
-        println!("Wait for reader to finish...");
-        reader_handle.join().unwrap();
 
         // Assert that the output contains the expected echo result
         // Expected: "echo hello" echoed back (due to terminal echo), then "hello"
