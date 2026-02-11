@@ -47,7 +47,7 @@ mod tests {
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = master.try_clone_reader().unwrap();
-        let master_writer = master.take_writer().unwrap();
+        let mut master_writer = master.take_writer().unwrap();
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
@@ -76,26 +76,19 @@ mod tests {
 
         thread::sleep(Duration::from_millis(500));
 
-        // Thread to write input into the PTY.
-        let writer_handle = thread::spawn(move || {
-            let mut writer = master_writer;
-            // Send a test command
-            writer.write_all(b"echo hello").unwrap();
-            writer.write_all(NEWLINE).unwrap();
+        // Send a test command
+        master_writer.write_all(b"echo hello").unwrap();
+        master_writer.write_all(NEWLINE).unwrap();
 
-            // thread::sleep(Duration::from_millis(500));
+        // thread::sleep(Duration::from_millis(500));
 
-            // Send exit
-            writer.write_all(b"exit").unwrap();
-            writer.write_all(NEWLINE).unwrap();
-        });
+        // Send exit
+        master_writer.write_all(b"exit").unwrap();
+        master_writer.write_all(NEWLINE).unwrap();
 
         // Wait for Bash to exit
+        println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
-
-        // Wait for writer to finish
-        println!("Wait for writer to finish...");
-        writer_handle.join().unwrap();
 
 
         // Wait for reader to finish
