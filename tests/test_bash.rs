@@ -62,6 +62,11 @@ mod tests {
                             }
                             output = output.replace("\x1b[6n", "");
                         }
+                        // add a for loop that printlns every character as ascii code
+                        // for debugging purposes
+                        for (i, byte) in buffer[..n].iter().enumerate() {
+                            println!("{}\t{}\t{}", i, byte, *byte as char);
+                        }
                         if !output.is_empty() {
                             tx.send(output).unwrap();
                         }
