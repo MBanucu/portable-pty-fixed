@@ -1,0 +1,42 @@
+[package]
+name = "portable-pty"
+version = "0.9.0"
+authors = ["Wez Furlong"]
+edition = "2018"
+repository = "https://github.com/wezterm/wezterm"
+description = "Cross platform pty interface"
+license = "MIT"
+documentation = "https://docs.rs/portable-pty"
+
+[dependencies]
+anyhow = "1.0"
+downcast-rs = "1.0"
+filedescriptor = "0.8.3"
+libc = "0.2"
+log = "0.4"
+nix = {version="0.29", features=["term", "fs"]}
+serde = {version="1.0", default-features=false, optional=true, features = ["derive"]}
+serial2 = "0.2"
+shell-words = "1.1"
+
+[features]
+default = []
+serde_support = ["serde"]
+
+[target."cfg(windows)".dependencies]
+bitflags = "1.3"
+lazy_static = "1.4"
+shared_library = "0.1"
+winapi = { version="0.3.9", features = [
+    "winuser",
+    "consoleapi",
+    "handleapi",
+    "fileapi",
+    "namedpipeapi",
+    "synchapi",
+]}
+winreg = "0.10"
+
+[dev-dependencies]
+futures = "0.3"
+smol = "2.0"
