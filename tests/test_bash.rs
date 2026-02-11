@@ -90,8 +90,10 @@ mod tests {
             writer.write_all(NEWLINE).unwrap();
 
             drop(writer);
-            drop(master);
         });
+
+        // Wait for Bash to exit
+        let status = child.lock().unwrap().wait().unwrap();
 
         // Wait for writer to finish
         println!("Wait for writer to finish...");
@@ -108,9 +110,6 @@ mod tests {
         while let Ok(chunk) = rx.try_recv() {
             collected_output.push_str(&chunk);
         }
-
-        // Wait for Bash to exit
-        let status = child.lock().unwrap().wait().unwrap();
 
         // const STATUS_CONTROL_C_EXIT: u32 = 0xC000013A;
 
