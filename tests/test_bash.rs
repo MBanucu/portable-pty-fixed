@@ -82,14 +82,14 @@ mod tests {
         // Send exit
         master_writer.write_all(b"exit").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-        
-        drop(master_writer); // Close the writer to signal EOF to the reader thread
+
+        drop(master); // Close the master to ensure the reader thread can exit
         
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
         
-        drop(master); // Close the master to ensure the reader thread can exit
+        drop(master_writer); // Close the writer to signal EOF to the reader thread
 
 
         // Wait for reader to finish
