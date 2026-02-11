@@ -6,8 +6,10 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use std::thread;
     use std::time::Duration;
+    use ntest::timeout;
 
     #[test]
+    #[timeout(5000)]
     fn test_bash_example() {
         let pty_system = NativePtySystem::default();
 
