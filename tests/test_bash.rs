@@ -121,16 +121,16 @@ mod tests {
         println!("Wait for writer to finish...");
         writer_handle.join().unwrap();
 
+        // Wait for reader to finish
+        println!("Wait for reader to finish...");
+        reader_handle.join().unwrap();
+
         // Collect all output from the channel
         println!("Collecting output from the channel...");
         let mut collected_output = String::new();
         while let Ok(chunk) = rx.try_recv() {
             collected_output.push_str(&chunk);
-        }
-
-        // Wait for reader to finish
-        println!("Wait for reader to finish...");
-        reader_handle.join().unwrap();
+        }    
 
         // Wait for Bash to exit
         let status = child.lock().unwrap().wait().unwrap();
