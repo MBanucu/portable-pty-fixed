@@ -87,7 +87,7 @@ impl PseudoCon {
                 size,
                 input.as_raw_handle() as _,
                 output.as_raw_handle() as _,
-                0,
+                PSEUDOCONSOLE_INHERIT_CURSOR,
                 &mut con,
             )
         };
