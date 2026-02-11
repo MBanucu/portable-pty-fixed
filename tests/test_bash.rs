@@ -88,13 +88,13 @@ mod tests {
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
         
-        drop(master_writer); // Close the writer to signal EOF to the reader thread
-        drop(master); // Close the master to ensure the reader thread can exit
-
-
         // Wait for reader to finish
         println!("Wait for reader to finish...");
         reader_handle.join().unwrap();
+
+        drop(master_writer); // Close the writer to signal EOF to the reader thread
+        drop(master); // Close the master to ensure the reader thread can exit
+
 
         // Collect all output from the channel
         println!("Collecting output from the channel...");
