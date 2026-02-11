@@ -145,3 +145,18 @@ If you drop the master before child exited then it is the same behavior as dropp
 See
 - [GitHub action](https://github.com/MBanucu/portable-pty-fixed/actions/runs/21918876088/job/63293388162?pr=4)
 - [PR](https://github.com/MBanucu/portable-pty-fixed/pull/4)
+
+## How to close the reader pipe properly
+
+Observation:
+- [drop master only](https://github.com/MBanucu/portable-pty-fixed/tree/refs/heads/drop-master-only) is passing the test, so it is closing the reader pipe.
+- [drop writer only](https://github.com/MBanucu/portable-pty-fixed/tree/refs/heads/drop-writer-only) is passing the test, so it is closing the reader pipe.
+- [drop nothing](https://github.com/MBanucu/portable-pty-fixed/tree/refs/heads/drop-nothing) is not passing the test with a timeout waiting for the reader thread to finish.
+
+So if you are on Linux or macOS then you do not have to do anything. If you run `bash` or `sh` then the termination of `bash` and `sh` will close the pipe automatically and no manual dropping measures have to be taken to close the pipe and be sure to get all the last bits of information out of the reader.
+
+The only problem is if you have to deal with Windows (`ConPTY`). Then the sequence is as follows:
+- Make sure that the child exited, either by polling or by block-waiting.
+- Drop the master or the writer to close the reader pipe.
+
+Hopefully there is only set an EOF signal at the end of the reader pipe by dropping master or writer and not signaling something like `STATUS_CONTROL_C_EXIT` to the pipe to make sure that a slow reader thread that has not yet fetched all the last bits of the reader pipe can read the pipe to the end. I will probably soon make this test with a thread that is on purpose slow and test if this race condition exists and spits into the soup or not.
