@@ -56,6 +56,8 @@ mod tests {
             }
         });
 
+        std::thread::sleep(std::time::Duration::from_millis(500));
+
         // Thread to write input into the PTY.
         let writer_handle = thread::spawn(move || {
             let mut writer = master_writer;
@@ -77,7 +79,12 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
-        assert!(status.success(), "Bash exited with status: {:?}, output: {}", status, collected_output);
+        assert!(
+            status.success(),
+            "Bash exited with status: {:?}, output: {}",
+            status,
+            collected_output
+        );
 
         // Wait for reader to finish
         reader_handle.join().unwrap();
