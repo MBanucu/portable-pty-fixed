@@ -4,7 +4,7 @@ mod tests {
     use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
     use std::io::{Read, Write};
     use std::sync::mpsc::channel;
-    use std::sync::{Arc, Mutex};
+    
     use std::thread;
     use std::time::Duration;
 
