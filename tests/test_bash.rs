@@ -41,7 +41,6 @@ mod tests {
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
         let cmd = CommandBuilder::new(BASH_COMMAND);
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
-        let child_for_reader = child.clone();
 
         drop(slave);
         
@@ -65,32 +64,6 @@ mod tests {
                         let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         if !output.is_empty() {
                             tx.send(output).unwrap();
-                        }
-
-                        // windows workaround
-                        if child_for_reader
-                            .lock()
-                            .unwrap()
-                            .try_wait()
-                            .unwrap()
-                            .is_some()
-                        {
-                            println!("Child process has exited, reading remaining output...");
-                            let mut vec = vec![];
-                            let len = reader.read_to_end(&mut vec);
-                            println!("Sending last chunk");
-                            if let Ok(n) = len {
-                                // add a for loop that printlns every character as ascii code
-                                // for debugging purposes
-                                for (i, byte) in vec[..n].iter().enumerate() {
-                                    println!("{}\t{}\t{}", i, byte, *byte as char);
-                                }
-                                let output = String::from_utf8_lossy(&vec[..n]).to_string();
-                                if !output.is_empty() {
-                                    tx.send(output).unwrap();
-                                }
-                            }
-                            break;
                         }
                     }
                     Err(e) => {
