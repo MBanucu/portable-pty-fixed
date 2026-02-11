@@ -74,13 +74,9 @@ mod tests {
             }
         });
 
-        thread::sleep(Duration::from_millis(500));
-
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-
-        // thread::sleep(Duration::from_millis(500));
 
         // Send exit
         master_writer.write_all(b"exit").unwrap();
