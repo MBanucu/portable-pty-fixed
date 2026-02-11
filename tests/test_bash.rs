@@ -7,6 +7,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use std::thread;
+    use std::time::Duration;
     
 
     #[test]
@@ -74,6 +75,7 @@ mod tests {
             }
         });
 
+        thread::sleep(Duration::from_millis(500));
         
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
