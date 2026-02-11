@@ -45,7 +45,7 @@ mod tests {
         let writer = Arc::new(Mutex::new(pair.master.take_writer().unwrap()));
 
         // Clone for reader thread
-        let reader_writer = writer.clone();
+        let _reader_writer = writer.clone();
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
@@ -54,7 +54,7 @@ mod tests {
                 match reader.read(&mut buffer) {
                     Ok(0) => break, // EOF
                     Ok(n) => {
-                        let mut output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                        let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         #[cfg(windows)]
                         if output.contains("\x1b[6n") {
                             if let Ok(mut w) = reader_writer.lock() {
