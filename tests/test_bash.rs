@@ -74,21 +74,22 @@ mod tests {
             }
         });
 
-        drop(master); // Close the master to ensure the reader thread can exit
         
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-
+        
         // Send exit
         master_writer.write_all(b"exit").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-
+        
+        drop(master_writer); // Close the writer to signal EOF to the reader thread
+        
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
-
-        drop(master_writer); // Close the writer to signal EOF to the reader thread
+        
+        drop(master); // Close the master to ensure the reader thread can exit
 
 
         // Wait for reader to finish
