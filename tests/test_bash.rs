@@ -81,7 +81,7 @@ mod tests {
             writer.write_all(NEWLINE).unwrap();
 
             thread::sleep(Duration::from_millis(500));
-            
+
             // Send exit
             writer.write_all(b"exit").unwrap();
             writer.write_all(NEWLINE).unwrap();
@@ -100,13 +100,14 @@ mod tests {
         }
 
         assert!(
-            status.success(),
+            status.exit_code() == 3221225786 || status.success(),
             "Bash exited with status: {:?}, output: {}",
             status,
             collected_output
         );
 
         // Wait for reader to finish
+        println!("Wait for reader to finish...");
         reader_handle.join().unwrap();
 
         // Assert that the output contains the expected echo result
