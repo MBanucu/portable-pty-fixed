@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use ntest::timeout;
     use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
     use std::io::{Read, Write};
     use std::sync::mpsc::channel;
     use std::sync::{Arc, Mutex};
     use std::thread;
     use std::time::Duration;
-    use ntest::timeout;
 
     #[test]
     #[timeout(5000)]
@@ -44,10 +44,7 @@ mod tests {
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = pair.master.try_clone_reader().unwrap();
-        let writer = Arc::new(Mutex::new(pair.master.take_writer().unwrap()));
-
-        // Clone for reader thread
-        let reader_writer = writer.clone();
+        let master_writer = pair.master.take_writer().unwrap();
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
@@ -56,14 +53,7 @@ mod tests {
                 match reader.read(&mut buffer) {
                     Ok(0) => break, // EOF
                     Ok(n) => {
-                        let mut output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                        if output.contains("\x1b[6n") {
-                            println!("Received cursor position request, sending response...");
-                            if let Ok(mut w) = reader_writer.lock() {
-                                let _ = w.write_all(b"\x1b[1;1R"); // Ignore errors for simplicity
-                            }
-                            output = output.replace("\x1b[6n", "");
-                        }
+                        let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         // add a for loop that printlns every character as ascii code
                         // for debugging purposes
                         for (i, byte) in buffer[..n].iter().enumerate() {
@@ -85,13 +75,13 @@ mod tests {
 
         // Thread to write input into the PTY.
         let writer_handle = thread::spawn(move || {
-            let mut w = writer.lock().unwrap();
+            let mut writer = master_writer;
             // Send a test command
-            w.write_all(b"echo hello").unwrap();
-            w.write_all(NEWLINE).unwrap();
+            writer.write_all(b"echo hello").unwrap();
+            writer.write_all(NEWLINE).unwrap();
             // Send exit
-            w.write_all(b"exit").unwrap();
-            w.write_all(NEWLINE).unwrap();
+            writer.write_all(b"exit").unwrap();
+            writer.write_all(NEWLINE).unwrap();
         });
 
         // Wait for writer to finish
