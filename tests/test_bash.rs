@@ -75,6 +75,7 @@ mod tests {
                             .unwrap()
                             .is_some()
                         {
+                            println!("Child process has exited, reading remaining output...");
                             drop(master);
                             let mut vec = vec![];
                             let len = reader.read_to_end(&mut vec);
