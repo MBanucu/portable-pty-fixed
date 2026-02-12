@@ -173,8 +173,8 @@ mod tests {
         });
 
         // Wait for shell to exit
-        println!("Waiting for bash to exit...");
-        match rx_waiter.recv_timeout(Duration::from_millis(100)) {
+        println!("Waiting for shell to exit...");
+        match rx_waiter.recv_timeout(Duration::from_millis(500)) {
             Err(e) => {
                 // macOS is expected to fail this test
                 #[cfg(not(target_os = "macos"))]
