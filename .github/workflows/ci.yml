@@ -24,7 +24,7 @@ jobs:
       run: cargo build --verbose
 
     # - name: install bash
-    #   if: runner.os == 'Windows'
+    #   if: runner.os == 'ubuntu-latest'
     #   run: |
     #     choco install git -y --params '/GitAndUnixToolsOnPath /NoAutoCrlf'
     #     $env:Path += ";C:\Program Files\Git\usr\bin"
