@@ -49,6 +49,25 @@ mod tests {
         let mut reader = master.try_clone_reader().unwrap();
         let mut master_writer = master.take_writer().unwrap();
 
+        println!("reading initial chunk");
+        let mut buffer = [0u8; 1024];
+        match reader.read(&mut buffer) {
+            Ok(n) => {
+                // add a for loop that printlns every character as ascii code
+                // for debugging purposes
+                for (i, byte) in buffer[..n].iter().enumerate() {
+                    println!("{}\t{}\t{}", i, byte, *byte as char);
+                }
+                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                if !output.is_empty() {
+                    tx.send(output).unwrap();
+                }
+            }
+            Err(e) => {
+                tx.send(format!("Error reading from PTY: {}", e)).unwrap();
+            }
+        }
+
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
@@ -67,7 +86,7 @@ mod tests {
 
         println!("sleeping");
         std::thread::sleep(Duration::from_millis(500));
-        
+
         println!("starting reader thread");
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
