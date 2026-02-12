@@ -38,6 +38,10 @@ mod tests {
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const PROMPT_SIGN: &str = "$";
 
+    /**
+     * macOS is expected to fail this test.
+     * It is made so complicated because it should be made sure that the size of buffer of the reader pipe is not the problem.
+     */
     #[test]
     #[timeout(5000)]
     fn slow_reader_read_pipe_split() {
