@@ -182,10 +182,7 @@ mod tests {
         let status = child.lock().unwrap().wait().unwrap();
         println!("child exit status received");
 
-        let child_exit_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_micros();
+        let child_exit_time = SystemTime::now();
 
         println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
@@ -200,10 +197,7 @@ mod tests {
                 break;
             }
         }
-        let echo_exit_received_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_micros();
+        let echo_exit_received_time = SystemTime::now();
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
@@ -215,7 +209,8 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
-        assert!(echo_exit_received_time - child_exit_time > 100);
+        let time_elapsed = echo_exit_received_time.duration_since(child_exit_time).unwrap().as_millis();
+        assert!(time_elapsed > 100, "{}", time_elapsed);
 
         assert!(
             status.success(),
