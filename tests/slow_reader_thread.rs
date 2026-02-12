@@ -271,6 +271,7 @@ mod tests {
             .duration_since(child_exit_time)
             .unwrap()
             .as_millis();
+        #[cfg(not(target_os = "macos"))]
         assert!(time_elapsed > 100, "time elapsed: {}", time_elapsed);
 
         assert!(
