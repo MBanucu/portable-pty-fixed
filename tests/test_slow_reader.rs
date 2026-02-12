@@ -33,7 +33,7 @@ mod tests {
     #[cfg(windows)]
     const PROMPT_SIGN: &str = ">";
     #[cfg(target_os = "macos")]
-    const PROMPT_SIGN: &str = " % ";
+    const PROMPT_SIGN: &str = "% ";
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const PROMPT_SIGN: &str = "$";
 
