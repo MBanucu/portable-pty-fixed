@@ -237,7 +237,7 @@ mod tests {
 
         println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
-        drop(master); // Close the master to ensure the reader thread can exit
+        drop(master); // Close the master to signal another EOF to the reader thread, double is better than single
 
         // Collect all output from the channel
         println!("Collecting output from the channel...");
