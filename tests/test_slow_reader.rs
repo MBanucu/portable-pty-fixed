@@ -261,5 +261,6 @@ mod tests {
             "Output was: {:?}, expected to contain 'exit'",
             collected_output
         );
+        assert!(false)
     }
 }
