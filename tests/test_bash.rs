@@ -8,6 +8,16 @@ mod tests {
 
     use std::thread;
     
+    #[cfg(windows)]
+    const BASH_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
+
+    #[cfg(target_os = "macos")]
+    const BASH_COMMAND: &str = "zsh";
+
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    const BASH_COMMAND: &str = "bash";
+
+    const NEWLINE: &[u8] = b"\r\n";
 
     #[test]
     #[timeout(5000)]
@@ -25,18 +35,6 @@ mod tests {
             .unwrap();
 
         let PtyPair { master, slave } = pair;
-
-        #[cfg(windows)]
-        const BASH_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
-
-        #[cfg(not(windows))]
-        const BASH_COMMAND: &str = "bash";
-
-        #[cfg(windows)]
-        const NEWLINE: &[u8] = b"\r\n";
-
-        #[cfg(not(windows))]
-        const NEWLINE: &[u8] = b"\n";
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
         let cmd = CommandBuilder::new(BASH_COMMAND);
