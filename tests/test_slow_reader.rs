@@ -64,10 +64,11 @@ mod tests {
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
         
+        println!("dropping ressources");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to ensure the reader thread can exit
 
-
+        println!("starting reader thread");
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
