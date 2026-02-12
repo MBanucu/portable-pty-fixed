@@ -166,6 +166,25 @@ mod tests {
         let status = child.lock().unwrap().wait().unwrap();
         println!("child exit status received");
 
+        // Collect all output from the channel
+        println!("Collecting output from the channel...");
+        let mut collected_output = String::new();
+        while let Ok(chunk) = rx.try_recv() {
+            collected_output.push_str(&chunk);
+        }
+        assert!(
+            !collected_output.contains("exit"),
+            "Output was: {:?}, expected to not contain 'exit'",
+            collected_output
+        );
+
+        thread::sleep(Duration::from_millis(100));
+        assert!(
+            !collected_output.contains("exit"),
+            "Output was: {:?}, expected to not contain 'exit'",
+            collected_output
+        );
+
         println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to ensure the reader thread can exit
@@ -175,8 +194,7 @@ mod tests {
         reader_handle.join().unwrap();
 
         // Collect all output from the channel
-        println!("Collecting output from the channel...");
-        let mut collected_output = String::new();
+        println!("Collecting more output from the channel...");
         while let Ok(chunk) = rx.try_recv() {
             collected_output.push_str(&chunk);
         }
