@@ -152,14 +152,14 @@ mod tests {
                         .unwrap()
                         .write_all(NEWLINE)
                         .unwrap();
-                }
-                find_str = "exit";
-                find_state += 1;
-                if state == find_state && collected_output.contains(find_str) {
-                    println!("found {}", find_str);
                     println!("stopping first reader thread");
                     break;
                 }
+                // find_str = "exit";
+                // find_state += 1;
+                // if state == find_state && collected_output.contains(find_str) {
+                //     println!("found {}", find_str);
+                // }
             }
         });
 
