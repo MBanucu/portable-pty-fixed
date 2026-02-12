@@ -198,10 +198,11 @@ mod tests {
                             .unwrap()
                             .as_millis()
                     );
-                    // continue the reader loop in this inner scope to make the code memory management save
-                    // or you could say: to make rust happy
-                    // because of the dropped writer, it has to be made sure that this is the last run of the loop
-                    // so that the dropped writer can't be used by potentially following loops and cause panic
+                    // Continue the reader loop in this inner scope to make the code memory management save,
+                    // or you could say: to make rust happy.
+                    // Because of the dropped writer, it has to be made sure that this is the last run of the loop
+                    // so that the dropped writer can't be used by potentially following loops and cause panic.
+                    // So a break statement has to follow after a drop statement in a loop.
                     loop {
                         match reader.read(&mut buffer) {
                             Ok(0) => break, // EOF
