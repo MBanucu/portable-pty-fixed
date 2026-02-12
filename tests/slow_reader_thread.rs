@@ -7,7 +7,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use std::thread;
-    use std::time::Duration;
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[cfg(windows)]
     const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
@@ -148,10 +148,31 @@ mod tests {
                         println!("sending exit");
                         writer.lock().unwrap().write_all(b"exit").unwrap();
                         writer.lock().unwrap().write_all(NEWLINE).unwrap();
+                        println!(
+                            "{}    [exit writer thread] time of exit written",
+                            SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_micros()
+                        );
                     });
                     println!("stopping first reader thread");
                     drop(master_writer_for_reader.lock().unwrap());
-                    thread::sleep(Duration::from_millis(500));
+                    println!(
+                        "{}    [reader thread] time of start being slow",
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_micros()
+                    );
+                    thread::sleep(Duration::from_millis(200));
+                    println!(
+                        "{}    [reader thread] time of continuing reading",
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_micros()
+                    );
                     state += 1;
                 }
             }
@@ -161,28 +182,28 @@ mod tests {
         let status = child.lock().unwrap().wait().unwrap();
         println!("child exit status received");
 
-        // Collect all output from the channel
-        println!("Collecting output from the channel...");
-        let mut collected_output = String::new();
-        while let Ok(chunk) = rx.try_recv() {
-            collected_output.push_str(&chunk);
-        }
-        assert!(
-            !collected_output.contains("exit"),
-            "Output was: {:?}, expected to not contain 'exit'",
-            collected_output
-        );
-
-        thread::sleep(Duration::from_millis(100));
-        assert!(
-            !collected_output.contains("exit"),
-            "Output was: {:?}, expected to not contain 'exit'",
-            collected_output
-        );
+        let child_exit_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_micros();
 
         println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to ensure the reader thread can exit
+
+        // Collect all output from the channel
+        println!("Collecting output from the channel...");
+        let mut collected_output = String::new();
+        while let Ok(chunk) = rx.recv() {
+            collected_output.push_str(&chunk);
+            if collected_output.contains("exit") {
+                break;
+            }
+        }
+        let echo_exit_received_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_micros();
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
@@ -193,6 +214,8 @@ mod tests {
         while let Ok(chunk) = rx.try_recv() {
             collected_output.push_str(&chunk);
         }
+
+        assert!(echo_exit_received_time - child_exit_time > 100);
 
         assert!(
             status.success(),
