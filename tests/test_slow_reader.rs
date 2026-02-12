@@ -63,7 +63,7 @@ use std::time::Duration;
 
         // Thread to read from the PTY and send data to the channel.
         thread::spawn(move || {
-            let mut buffer = [0u8; 1];
+            let mut buffer = [0u8; 1024];
             let mut collected_output = String::new();
 
             let mut state = 1;
