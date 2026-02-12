@@ -8,8 +8,6 @@ mod tests {
 
     use std::thread;
     use std::time::Duration;
-    #[cfg(target_os = "macos")]
-    use std::time::Duration;
 
     #[cfg(windows)]
     const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
@@ -185,7 +183,7 @@ mod tests {
             Ok(status) => {
                 // macOS is expected to fail this test
                 #[cfg(target_os = "macos")]
-                panic!("Is macOS fixed or what? ExitStatus: {}" status);
+                panic!("Is macOS fixed or what? ExitStatus: {}", status);
 
                 waiter_handle.join().unwrap();
                 println!("child exit status received");
