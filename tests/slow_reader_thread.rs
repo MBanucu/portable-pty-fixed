@@ -227,7 +227,7 @@ mod tests {
             .duration_since(child_exit_time)
             .unwrap()
             .as_millis();
-        assert!(time_elapsed > 100, "{}", time_elapsed);
+        assert!(time_elapsed > 100, "time elapsed: {}", time_elapsed);
 
         assert!(
             status.success(),
