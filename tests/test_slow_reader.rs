@@ -119,19 +119,33 @@ mod tests {
                     let at = collected_output.find(PROMPT_SIGN).unwrap();
                     collected_output = collected_output.split_off(at + PROMPT_SIGN.len());
                 }
-                if state == 2 {
-                    while collected_output.contains("hello") {
-                        println!("found {}", "hello");
-                        let at = collected_output.find("hello").unwrap();
-                        collected_output = collected_output.split_off(at + "hello".len());
-                        state = 3;
+                let mut find_str = "hello world";
+                let mut find_state = 2;
+                if state == find_state {
+                    while collected_output.contains(find_str) {
+                        println!("found {}", find_str);
+                        let at = collected_output.find(find_str).unwrap();
+                        collected_output = collected_output.split_off(at + find_str.len());
+                        state = find_state + 1;
                     }
                 }
-                if state == 3 && collected_output.contains(PROMPT_SIGN) {
-                    println!("found {}", PROMPT_SIGN);
-                    let at = collected_output.find(PROMPT_SIGN).unwrap();
+                find_str = "hello";
+                find_state += 1;
+                if state == find_state {
+                    while collected_output.contains(find_str) {
+                        println!("found {}", find_str);
+                        let at = collected_output.find(find_str).unwrap();
+                        collected_output = collected_output.split_off(at + find_str.len());
+                        state = find_state + 1;
+                    }
+                }
+                find_str = PROMPT_SIGN;
+                find_state += 1;
+                if state == find_state && collected_output.contains(find_str) {
+                    println!("found {}", find_str);
+                    let at = collected_output.find(find_str).unwrap();
                     collected_output = collected_output.split_off(at);
-                    state = 4;
+                    state = find_state + 1;
                     // Send exit
                     println!("sending exit");
                     master_writer_for_reader
@@ -145,8 +159,10 @@ mod tests {
                         .write_all(NEWLINE)
                         .unwrap();
                 }
-                if state == 4 && collected_output.contains("exit") {
-                    println!("found exit");
+                find_str = "exit";
+                find_state += 1;
+                if state == find_state && collected_output.contains(find_str) {
+                    println!("found {}", find_str);
                     println!("stopping first reader thread");
                     break;
                 }
