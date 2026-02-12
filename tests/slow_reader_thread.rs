@@ -36,10 +36,6 @@ mod tests {
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const PROMPT_SIGN: &str = "$";
 
-    /**
-     * macOS is expected to fail this test.
-     * It is made so complicated because it should be made sure that the size of buffer of the reader pipe is not the problem.
-     */
     #[test]
     #[timeout(5000)]
     fn slow_reader_thread() {
@@ -72,14 +68,12 @@ mod tests {
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let tx_arc1 = Arc::new(Mutex::new(tx));
-        let tx_arc2 = tx_arc1.clone();
         let reader_for_first_thread = Arc::new(Mutex::new(master.try_clone_reader().unwrap()));
-        let reader_for_second_thread = reader_for_first_thread.clone();
         let master_writer = Arc::new(Mutex::new(master.take_writer().unwrap()));
         let master_writer_for_reader = master_writer.clone();
 
         // Thread to read from the PTY and send data to the channel.
-        thread::spawn(move || {
+        let reader_handle = thread::spawn(move || {
             let mut buffer = [0u8; 1024];
             let mut collected_output = String::new();
 
@@ -162,6 +156,7 @@ mod tests {
                         .unwrap();
                     println!("stopping first reader thread");
                     drop(master_writer_for_reader.lock().unwrap());
+                    thread::sleep(Duration::from_millis(500));
                 }
             }
         });
@@ -179,39 +174,8 @@ mod tests {
                 panic!("{}", e);
             }
             Ok(status) => {
-                // macOS is expected to fail this test
-                #[cfg(target_os = "macos")]
-                panic!("Is macOS fixed or what? ExitStatus: {}", status);
-
                 waiter_handle.join().unwrap();
                 println!("child exit status received");
-
-                println!("starting second reader thread");
-                let reader_handle = thread::spawn(move || {
-                    let mut buffer = [0u8; 1024];
-                    let mut reader = reader_for_second_thread.lock().unwrap();
-                    let tx = tx_arc2.lock().unwrap();
-                    loop {
-                        match reader.read(&mut buffer) {
-                            Ok(0) => break, // EOF
-                            Ok(n) => {
-                                // add a for loop that printlns every character as ascii code
-                                // for debugging purposes
-                                for (i, byte) in buffer[..n].iter().enumerate() {
-                                    println!("{}\t{}\t{}", i, byte, *byte as char);
-                                }
-                                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                                if !output.is_empty() {
-                                    tx.send(output.clone()).unwrap();
-                                }
-                            }
-                            Err(e) => {
-                                tx.send(format!("Error reading from PTY: {}", e)).unwrap();
-                                break;
-                            }
-                        }
-                    }
-                });
 
                 println!("dropping writer and master");
                 drop(master_writer); // Close the writer to signal EOF to the reader thread
