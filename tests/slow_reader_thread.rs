@@ -55,7 +55,7 @@ mod tests {
      *   In short: the dropping of master or writer after child exit does not influence the buffer of the reader pipe.
      * - The reader thread is exiting gracefully when EOF is being read (0-bytes-received-signal).
      * - Waiting for the reader thread to exit ensures that all data from the pipe is being drained to the storage of choice.
-     * 
+     *
      * Conclusion: The provided pattern in this test works for all systems.
      */
     #[test]
@@ -164,8 +164,8 @@ mod tests {
                 find_state += 1;
                 if state == find_state && collected_output.contains(find_str) {
                     println!("found {}", find_str);
-                    // Send exit
                     let writer = master_writer_for_reader.clone();
+                    // Send exit
                     thread::spawn(move || {
                         println!("sending exit");
                         writer.lock().unwrap().write_all(b"exit").unwrap();
@@ -179,7 +179,6 @@ mod tests {
                         );
                     });
                     println!("stopping first reader thread");
-                    drop(master_writer_for_reader.lock().unwrap());
                     println!(
                         "{}    [reader thread] time of start being slow",
                         SystemTime::now()
@@ -187,6 +186,7 @@ mod tests {
                             .unwrap()
                             .as_millis()
                     );
+                    drop(master_writer_for_reader);
                     thread::sleep(Duration::from_millis(200));
                     println!(
                         "{}    [reader thread] time of continuing reading",
@@ -195,7 +195,27 @@ mod tests {
                             .unwrap()
                             .as_millis()
                     );
-                    state += 1;
+                    match reader.read(&mut buffer) {
+                        Ok(0) => break, // EOF
+                        Ok(n) => {
+                            // add a for loop that printlns every character as ascii code
+                            // for debugging purposes
+                            for (i, byte) in buffer[..n].iter().enumerate() {
+                                println!("{}\t{}\t{}", i, byte, *byte as char);
+                            }
+                            let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                            if !output.is_empty() {
+                                tx.send(output.clone()).unwrap();
+                                collected_output.push_str(&output);
+                                println!("collected_output: {}", collected_output)
+                            }
+                        }
+                        Err(e) => {
+                            tx.send(format!("Error reading from PTY: {}", e)).unwrap();
+                            break;
+                        }
+                    }
+                    break;
                 }
             }
         });
