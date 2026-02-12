@@ -36,6 +36,28 @@ mod tests {
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const PROMPT_SIGN: &str = "$";
 
+    /**
+     * Conclusions of this test:
+     * - [macOS] the shell process is not continuing without a reader thread continuously reading from the pipe.
+     * - On every system this pattern can be used to handle creation, data collection and exit handling to gracefully shut down the PTY.
+     * - This pattern ensures that no data is being lost.
+     * - Waiting for the child exit before dropping master or writer garuantees that
+     *   - there is an EOF written to the reader pipe and not somehow in the middle of the data.
+     *   - the child exit code is not influenced by the observer that wants to gracefully handle the data.
+     * - [Windows] You have to drop the master or the writer for the reader pipe to get EOF or abort written to the reader pipe.
+     *   - Dropping the master or the writer when the child did not exit yet will
+     *     - exit the child with signal Ctrl+C
+     *     - close the reader pipe
+     *     - delete the buffer of the reader pipe, data is lost
+     *   - Dropping the master or the writer when child did already exit will just close the pipe with EOF but will not influence the buffer in the pipe.
+     * - [macOS, Linux] You do not have to drop the master or the writer. The reader pipe is closing automatically after child exit.
+     * - [Windows] Dropping master or writer after child exit garuantees that there is an EOF written at the end of the pipe, even if master or writer is dropped before the data is read from the pipe.
+     *   In short: the dropping of master or writer after child exit does not influence the buffer of the reader pipe.
+     * - The reader thread is exiting gracefully when EOF is being read (0-bytes-received-signal).
+     * - Waiting for the reader thread to exit ensures that all data from the pipe is being drained to the storage of choice.
+     * 
+     * Conclusion: The provided pattern in this test works for all systems.
+     */
     #[test]
     #[timeout(5000)]
     fn slow_reader_thread() {

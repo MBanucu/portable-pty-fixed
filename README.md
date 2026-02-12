@@ -160,3 +160,11 @@ The only problem is if you have to deal with Windows (`ConPTY`). Then the sequen
 2. Drop the master or the writer to close the reader pipe.
 
 Hopefully there is only set an EOF signal at the end of the reader pipe by dropping master or writer and not signaling something like `STATUS_CONTROL_C_EXIT` to the pipe to make sure that a slow reader thread that has not yet fetched all the last bits of the reader pipe can read the pipe to the end. I will probably soon make this test with a thread that is on purpose slow and test if this race condition exists and spits into the soup or not.
+
+## Slow reader thread is allowed
+The test has been made. It is confirmed that a slow reader thread does not influence the stability of the data in the reader pipe, given the condition, that the child exited before dropping master or reader. After the child wrote all its data to the buffer of the pipe and exits, then dropping the master or the writer does not influence the data in the buffer. Dropping the master or the writer (in Windows) then appends EOF to the end of the buffer and the reader thread has all time in the world to fetch the data from the buffer in the pipe and fetches the EOF signal reproducibly.
+
+Again: In Windows you have to drop the master or the writer to write EOF to the reader pipe, in Linux or macOS this is not required, but it doesn't hurt.
+
+## macOS requires very active reader thread
+The child stops execution if reader thread is not reading. The reader thread has to be very responsive to make sure that the child is executing without unnecessary sleeps and waits. On Linux and Windows the child does only stop execution if the buffer of the reader pipe is full. This is the behavior of `zsh` on macOS. `zsh` on macOS is highly sofisticated (mis)configured. Maybe you can configure `zsh` on macOS to allow some space for the reader thread or maybe it is more deeply rooted in the macOS system. Another test with bash 3 did also show the same behavior. At the time of testing I thought that it would be the old bash version that is causing trouble so I switched to the native macOS supported and recommended shell `zsh`. It didn't "fix" it. Same problem, if you want to call it a problem. I didn't try other shells on macOS yet and I didn't try to update bash on macOS yet.
