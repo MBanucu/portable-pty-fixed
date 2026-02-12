@@ -198,7 +198,7 @@ mod tests {
                             .unwrap()
                             .as_millis()
                     );
-                    // Continue the reader loop in this inner scope to make the code memory management save,
+                    // Continue the reader loop in this inner scope to make the code memory management safe,
                     // or you could say: to make rust happy.
                     // Because of the dropped writer, it has to be made sure that this is the last run of the loop
                     // so that the dropped writer can't be used by potentially following loops and cause panic.
