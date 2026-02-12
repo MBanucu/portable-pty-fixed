@@ -95,7 +95,7 @@ use std::time::Duration;
                     println!("found {}", PROMPT_SIGN);
                     // Send a test command
                     #[cfg(target_os = "macos")]
-                    std::thread::sleep(Duration::from_millis(100));
+                    std::thread::sleep(Duration::from_millis(1000));
                     println!("sending test command");
                     master_writer_for_reader
                         .lock()
