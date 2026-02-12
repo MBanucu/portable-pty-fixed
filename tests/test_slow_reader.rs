@@ -8,7 +8,7 @@ mod tests {
 
     use std::thread;
     #[cfg(target_os = "macos")]
-use std::time::Duration;
+    use std::time::Duration;
 
     #[cfg(windows)]
     const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
@@ -95,35 +95,22 @@ use std::time::Duration;
                     println!("found {}", PROMPT_SIGN);
                     // Send a test command
                     println!("sending test command");
-                    master_writer_for_reader
-                        .lock()
-                        .unwrap()
-                        .write_all(b"echo hello")
-                        .unwrap();
-                    master_writer_for_reader
-                        .lock()
-                        .unwrap()
-                        .write_all(NEWLINE)
-                        .unwrap();
+                    let writer = master_writer_for_reader.clone();
+                    thread::spawn(move || {
+                        writer.lock().unwrap().write_all(b"echo hello").unwrap();
+                        writer.lock().unwrap().write_all(NEWLINE).unwrap();
+                    });
                     state = 2;
                     let at = collected_output.find(PROMPT_SIGN).unwrap();
                     collected_output = collected_output.split_off(at + PROMPT_SIGN.len());
-                    #[cfg(target_os = "macos")]
-                    std::thread::sleep(Duration::from_millis(1000));
                 }
-                if state == 2 && collected_output.contains("echo hello") {
-                    println!("found {}", "echo hello");
-                    state = 3;
-                    let at = collected_output.find("echo hello").unwrap();
-                    collected_output = collected_output.split_off(at + "echo hello".len());
-                }
-                if state == 3 && collected_output.contains("hello") {
+                while state == 2 && collected_output.contains("hello") {
                     println!("found {}", "hello");
-                    state = 4;
+                    state = 3;
                     let at = collected_output.find("hello").unwrap();
                     collected_output = collected_output.split_off(at + "hello".len());
                 }
-                if state == 4 && collected_output.contains(PROMPT_SIGN) {
+                if state == 3 && collected_output.contains(PROMPT_SIGN) {
                     println!("found {}", PROMPT_SIGN);
                     // Send exit
                     println!("sending exit");
