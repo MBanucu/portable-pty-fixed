@@ -231,7 +231,7 @@ mod tests {
             }
         });
 
-        println!("Waiting for shell to exit...");
+        println!("Waiting for child to exit...");
         let status = child.lock().unwrap().wait().unwrap();
         println!("child exit status received");
 
