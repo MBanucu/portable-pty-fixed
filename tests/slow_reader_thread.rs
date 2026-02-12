@@ -186,7 +186,8 @@ mod tests {
                             .unwrap()
                             .as_millis()
                     );
-                    // drop(master_writer_for_reader);
+                    // drop the writer to be able to receive EOF (on Windows)
+                    drop(master_writer_for_reader);
                     thread::sleep(Duration::from_millis(200));
                     println!(
                         "{}    [reader thread] time of continuing reading",
@@ -237,7 +238,7 @@ mod tests {
 
         println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
-        // drop(master); // Close the master to signal another EOF to the reader thread, double is better than single
+        drop(master); // Close the master to signal another EOF to the reader thread, double is better than single
 
         // Collect all output from the channel
         println!("Collecting output from the channel...");
