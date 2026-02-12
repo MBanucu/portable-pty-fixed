@@ -23,23 +23,14 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
-    # - name: install bash
-    #   if: runner.os == 'Windows'
-    #   run: |
-    #     choco install git -y --params '/GitAndUnixToolsOnPath /NoAutoCrlf'
-    #     $env:Path += ";C:\Program Files\Git\usr\bin"
-    #     bash --version
+    - name: get runner os
+      run: echo "${{runner.os}}"
+
+    - name: Install zsh
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y zsh
 
     - name: Run tests
       run: cargo test
       env:
         RUST_BACKTRACE: full
-      # Note: On Windows, the test_bash.rs test may fail because 'bash' is not available by default.
-      # If needed, you can add a conditional step to install bash (e.g., via MSYS2 or Git Bash).
-      # For example, uncomment the following for Windows:
-      # if: runner.os == 'Windows'
-      # run: |
-      #   choco install git -y --params '/GitAndUnixToolsOnPath /NoAutoCrlf'
-      #   $env:Path += ";C:\Program Files\Git\usr\bin"
-      #   bash --version
-      # Then run cargo test after that.
