@@ -183,3 +183,11 @@ The child stops execution if reader thread is not reading. The reader thread has
 - Analysis
   - After having all data ever produced by the child from start to finish, you can do stuff with it.
   - You don't have to deal with flakyness of the data, all data will be available, no flaky truncation because of race conditions.
+
+## Can you block wait always?
+Yes. There is always a pattern how to block wait for conditions to become true. No matter the OS.
+- You can block read the pipe of the child (it is the default behavior in every OS) in the reader thread.
+- You can block wait for the child to exit.
+- You can block wait for the reader thread to finish.
+
+There is always a pattern how you can achieve this. I will make examples and tests.
