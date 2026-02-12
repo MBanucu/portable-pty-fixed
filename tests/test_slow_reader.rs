@@ -94,8 +94,6 @@ use std::time::Duration;
                 if state == 1 && collected_output.contains(PROMPT_SIGN) {
                     println!("found {}", PROMPT_SIGN);
                     // Send a test command
-                    #[cfg(target_os = "macos")]
-                    std::thread::sleep(Duration::from_millis(1000));
                     println!("sending test command");
                     master_writer_for_reader
                         .lock()
@@ -110,6 +108,8 @@ use std::time::Duration;
                     state = 2;
                     let at = collected_output.find(PROMPT_SIGN).unwrap();
                     collected_output = collected_output.split_off(at + PROMPT_SIGN.len());
+                    #[cfg(target_os = "macos")]
+                    std::thread::sleep(Duration::from_millis(1000));
                 }
                 if state == 2 && collected_output.contains("echo hello") {
                     println!("found {}", "echo hello");
