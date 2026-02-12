@@ -147,7 +147,7 @@ mod tests {
                 }
                 if state == 4 && collected_output.contains("exit") {
                     println!("found exit");
-                    println!("stopping first reader trhead");
+                    println!("stopping first reader thread");
                     break;
                 }
             }
