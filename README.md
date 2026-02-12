@@ -39,7 +39,7 @@ Because of the following `feature`: `PSEUDOCONSOLE_INHERIT_CURSOR`, see [CreateP
 
 ### Solutions
 1. Be chatty and chat a little bit with the ConPTY and tell it your deepest desires, for example, where you want the initial cursor position to be.
-2. Disable the bug! How to disable the bug that is a feature? You clone the `wezterm` repo, remove the hard coded flag, set up a rust development environment, learn rust from scratch, compile it from source and probably republish the library becaus you want to use it as a base library for your own library of program. Easy. here it is:
+2. Disable the bug! How to disable the bug that is a feature? You clone the `wezterm` repo, remove the hard coded flag, set up a rust development environment, learn rust from scratch, compile it from source and probably republish the library because you want to use it as a base library for your own library of program. Easy. here it is:
 
 [https://github.com/wezterm/wezterm/blob/05343b387085842b434d267f91b6b0ec157e4331/pty/src/win/psuedocon.rs#L83C1-L91C14](https://github.com/wezterm/wezterm/blob/05343b387085842b434d267f91b6b0ec157e4331/pty/src/win/psuedocon.rs#L83C1-L91C14)
 
