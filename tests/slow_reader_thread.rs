@@ -3,7 +3,7 @@ mod tests {
     use ntest::timeout;
     use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
     use std::io::{Read, Write};
-    use std::sync::mpsc::{channel};
+    use std::sync::mpsc::channel;
     use std::sync::{Arc, Mutex};
 
     use std::thread;
@@ -162,61 +162,47 @@ mod tests {
             }
         });
 
-        let (tx_waiter, rx_waiter) = channel();
-        let waiter_handle = thread::spawn(move || {
-            let status = child.lock().unwrap().wait().unwrap();
-            let _ = tx_waiter.send(status).unwrap();
-        });
+        println!("Waiting for shell to exit...");
+        let status = child.lock().unwrap().wait().unwrap();
+        println!("child exit status received");
 
-        // Wait for shell to exit
-        println!("Waiting for bash to exit...");
-        match rx_waiter.recv_timeout(Duration::from_millis(100)) {
-            Err(e) => {
-                panic!("{}", e);
-            }
-            Ok(status) => {
-                waiter_handle.join().unwrap();
-                println!("child exit status received");
+        println!("dropping writer and master");
+        drop(master_writer); // Close the writer to signal EOF to the reader thread
+        drop(master); // Close the master to ensure the reader thread can exit
 
-                println!("dropping writer and master");
-                drop(master_writer); // Close the writer to signal EOF to the reader thread
-                drop(master); // Close the master to ensure the reader thread can exit
+        // Wait for reader to finish
+        println!("Wait for reader to finish...");
+        reader_handle.join().unwrap();
 
-                // Wait for reader to finish
-                println!("Wait for reader to finish...");
-                reader_handle.join().unwrap();
-
-                // Collect all output from the channel
-                println!("Collecting output from the channel...");
-                let mut collected_output = String::new();
-                while let Ok(chunk) = rx.try_recv() {
-                    collected_output.push_str(&chunk);
-                }
-
-                assert!(
-                    status.success(),
-                    "{} exited with status: {:?}, output: {}",
-                    SHELL_COMMAND,
-                    status,
-                    collected_output
-                );
-
-                // Assert that the output contains the expected echo result
-                // Expected: "echo hello" echoed back (due to terminal echo), then "hello"
-                // Count occurrences to be more robust across platforms (should appear at least twice).
-                let hello_count = collected_output.matches("hello").count();
-                assert!(
-                    hello_count >= 2,
-                    "Output was: {:?}, 'hello' appeared {} times",
-                    collected_output,
-                    hello_count
-                );
-                assert!(
-                    collected_output.contains("exit"),
-                    "Output was: {:?}, expected to contain 'exit'",
-                    collected_output
-                );
-            }
+        // Collect all output from the channel
+        println!("Collecting output from the channel...");
+        let mut collected_output = String::new();
+        while let Ok(chunk) = rx.try_recv() {
+            collected_output.push_str(&chunk);
         }
+
+        assert!(
+            status.success(),
+            "{} exited with status: {:?}, output: {}",
+            SHELL_COMMAND,
+            status,
+            collected_output
+        );
+
+        // Assert that the output contains the expected echo result
+        // Expected: "echo hello" echoed back (due to terminal echo), then "hello"
+        // Count occurrences to be more robust across platforms (should appear at least twice).
+        let hello_count = collected_output.matches("hello").count();
+        assert!(
+            hello_count >= 2,
+            "Output was: {:?}, 'hello' appeared {} times",
+            collected_output,
+            hello_count
+        );
+        assert!(
+            collected_output.contains("exit"),
+            "Output was: {:?}, expected to contain 'exit'",
+            collected_output
+        );
     }
 }
