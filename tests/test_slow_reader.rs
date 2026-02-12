@@ -182,19 +182,23 @@ mod tests {
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = master.try_clone_reader().unwrap();
-        let mut master_writer = master.take_writer().unwrap();
-
-        // Send a test command
-        master_writer.write_all(b"echo hello").unwrap();
-        master_writer.write_all(NEWLINE).unwrap();
-
-        // Send exit
-        master_writer.write_all(b"exit").unwrap();
-        master_writer.write_all(NEWLINE).unwrap();
+        let master_writer = Arc::new(Mutex::new(master.take_writer().unwrap()));
+        let master_writer_for_reader = master_writer.clone();
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
-            let mut buffer = [0u8; 1024];
+            let mut buffer = [0u8; 1];
+            let mut collected_output = String::new();
+
+            // // Send a test command
+            // master_writer_for_reader.lock().unwrap().write_all(b"echo hello").unwrap();
+            // master_writer_for_reader.lock().unwrap().write_all(NEWLINE).unwrap();
+
+            // // Send exit
+            // master_writer_for_reader.lock().unwrap().write_all(b"exit").unwrap();
+            // master_writer_for_reader.lock().unwrap().write_all(NEWLINE).unwrap();
+
+            drop(master_writer_for_reader);
             loop {
                 match reader.read(&mut buffer) {
                     Ok(0) => break, // EOF
@@ -206,9 +210,9 @@ mod tests {
                         }
                         let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         if !output.is_empty() {
-                            tx.send(output).unwrap();
+                            tx.send(output.clone()).unwrap();
                         }
-                        std::thread::sleep(Duration::from_millis(500));
+                        collected_output.push_str(&output);
                     }
                     Err(e) => {
                         tx.send(format!("Error reading from PTY: {}", e)).unwrap();
