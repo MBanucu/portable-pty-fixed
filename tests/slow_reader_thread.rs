@@ -187,7 +187,8 @@ mod tests {
                             .as_millis()
                     );
                     // drop the ADDITIONAL lock reference to writer to be able to receive EOF (on Windows)
-                    // Do not drop the moved/main writer in the reader loop on Windows, it will kill the child.
+                    // Do not drop the moved/main writer in the reader loop (on Windows), it will kill the child,
+                    // when you still want to read data from the pipe.
                     drop(master_writer_for_reader);
                     thread::sleep(Duration::from_millis(200));
                     println!(
