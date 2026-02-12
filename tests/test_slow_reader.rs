@@ -35,11 +35,7 @@ mod tests {
         #[cfg(all(not(windows), not(target_os = "macos")))]
         const BASH_COMMAND: &str = "bash";
 
-        #[cfg(windows)]
         const NEWLINE: &[u8] = b"\r\n";
-
-        #[cfg(not(windows))]
-        const NEWLINE: &[u8] = b"\n";
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
         let cmd = CommandBuilder::new(BASH_COMMAND);
