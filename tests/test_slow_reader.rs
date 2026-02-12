@@ -69,10 +69,12 @@ mod tests {
         }
 
         // Send a test command
+        println!("send echo hello command");
         master_writer.write_all(b"echo hello").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
 
         // Send exit
+        println!("send exit command");
         master_writer.write_all(b"exit").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
 
