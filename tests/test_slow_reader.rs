@@ -98,8 +98,9 @@ mod tests {
                         let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         if !output.is_empty() {
                             tx.send(output.clone()).unwrap();
+                            collected_output.push_str(&output);
+                            println!("collected_output: {}", collected_output)
                         }
-                        collected_output.push_str(&output);
                     }
                     Err(e) => {
                         tx.send(format!("Error reading from PTY: {}", e)).unwrap();
@@ -111,33 +112,27 @@ mod tests {
                     // Send a test command
                     println!("sending test command");
                     let writer = master_writer_for_reader.clone();
-                    thread::spawn(move || {
-                        writer.lock().unwrap().write_all(b"echo hello").unwrap();
-                        writer.lock().unwrap().write_all(NEWLINE).unwrap();
-                    });
+                    writer.lock().unwrap().write_all(b"echo hello").unwrap();
+                    writer.lock().unwrap().write_all(NEWLINE).unwrap();
                     state = 2;
                     let at = collected_output.find(PROMPT_SIGN).unwrap();
                     collected_output = collected_output.split_off(at + PROMPT_SIGN.len());
                 }
-                let mut find_str = "hello world";
+                let mut find_str = "echo hello";
                 let mut find_state = 2;
-                if state == find_state {
-                    while collected_output.contains(find_str) {
-                        println!("found {}", find_str);
-                        let at = collected_output.find(find_str).unwrap();
-                        collected_output = collected_output.split_off(at + find_str.len());
-                        state = find_state + 1;
-                    }
+                if state == find_state && collected_output.contains(find_str) {
+                    println!("found {}", find_str);
+                    let at = collected_output.find(find_str).unwrap();
+                    collected_output = collected_output.split_off(at + find_str.len());
+                    state = find_state + 1;
                 }
                 find_str = "hello";
                 find_state += 1;
-                if state == find_state {
-                    while collected_output.contains(find_str) {
-                        println!("found {}", find_str);
-                        let at = collected_output.find(find_str).unwrap();
-                        collected_output = collected_output.split_off(at + find_str.len());
-                        state = find_state + 1;
-                    }
+                if state == find_state && collected_output.contains(find_str) {
+                    println!("found {}", find_str);
+                    let at = collected_output.find(find_str).unwrap();
+                    collected_output = collected_output.split_off(at + find_str.len());
+                    state = find_state + 1;
                 }
                 find_str = PROMPT_SIGN;
                 find_state += 1;
