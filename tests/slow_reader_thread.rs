@@ -157,6 +157,7 @@ mod tests {
                     println!("stopping first reader thread");
                     drop(master_writer_for_reader.lock().unwrap());
                     thread::sleep(Duration::from_millis(500));
+                    state += 1;
                 }
             }
         });
