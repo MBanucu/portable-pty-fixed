@@ -104,11 +104,13 @@ mod tests {
                     let at = collected_output.find(PROMPT_SIGN).unwrap();
                     collected_output = collected_output.split_off(at + PROMPT_SIGN.len());
                 }
-                while state == 2 && collected_output.contains("hello") {
-                    println!("found {}", "hello");
-                    state = 3;
-                    let at = collected_output.find("hello").unwrap();
-                    collected_output = collected_output.split_off(at + "hello".len());
+                if state == 2 {
+                    while collected_output.contains("hello") {
+                        println!("found {}", "hello");
+                        let at = collected_output.find("hello").unwrap();
+                        collected_output = collected_output.split_off(at + "hello".len());
+                        state = 3;
+                    }
                 }
                 if state == 3 && collected_output.contains(PROMPT_SIGN) {
                     println!("found {}", PROMPT_SIGN);
