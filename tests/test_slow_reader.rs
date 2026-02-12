@@ -7,6 +7,8 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use std::thread;
+    #[cfg(target_os = "macos")]
+use std::time::Duration;
 
     #[cfg(windows)]
     const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
@@ -92,6 +94,8 @@ mod tests {
                 if state == 1 && collected_output.contains(PROMPT_SIGN) {
                     println!("found {}", PROMPT_SIGN);
                     // Send a test command
+                    #[cfg(target_os = "macos")]
+                    std::thread::sleep(Duration::from_millis(100));
                     println!("sending test command");
                     master_writer_for_reader
                         .lock()
