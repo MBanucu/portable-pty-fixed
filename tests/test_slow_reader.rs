@@ -29,7 +29,10 @@ mod tests {
         #[cfg(windows)]
         const BASH_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
 
-        #[cfg(not(windows))]
+        #[cfg(target_os = "macos")]
+        const BASH_COMMAND: &str = "zsh";
+
+        #[cfg(all(not(windows), not(target_os = "macos")))]
         const BASH_COMMAND: &str = "bash";
 
         #[cfg(windows)]
