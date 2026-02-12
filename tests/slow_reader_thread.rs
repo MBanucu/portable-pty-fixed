@@ -143,17 +143,12 @@ mod tests {
                 if state == find_state && collected_output.contains(find_str) {
                     println!("found {}", find_str);
                     // Send exit
-                    println!("sending exit");
-                    master_writer_for_reader
-                        .lock()
-                        .unwrap()
-                        .write_all(b"exit")
-                        .unwrap();
-                    master_writer_for_reader
-                        .lock()
-                        .unwrap()
-                        .write_all(NEWLINE)
-                        .unwrap();
+                    let writer = master_writer_for_reader.clone();
+                    thread::spawn(move || {
+                        println!("sending exit");
+                        writer.lock().unwrap().write_all(b"exit").unwrap();
+                        writer.lock().unwrap().write_all(NEWLINE).unwrap();
+                    });
                     println!("stopping first reader thread");
                     drop(master_writer_for_reader.lock().unwrap());
                     thread::sleep(Duration::from_millis(500));
