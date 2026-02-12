@@ -19,7 +19,7 @@ mod tests {
     const SHELL_COMMAND: &str = "zsh";
     #[cfg(target_os = "macos")]
     const SHELL_ARGS: &[&str] = &["-f"];
-    
+
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const SHELL_COMMAND: &str = "bash";
     #[cfg(all(not(windows), not(target_os = "macos")))]
@@ -33,7 +33,7 @@ mod tests {
     #[cfg(windows)]
     const PROMPT_SIGN: &str = ">";
     #[cfg(target_os = "macos")]
-    const PROMPT_SIGN: &str = "% ";
+    const PROMPT_SIGN: &str = " > ";
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const PROMPT_SIGN: &str = "$";
 
@@ -59,6 +59,10 @@ mod tests {
         for arg in SHELL_ARGS {
             let _ = cmd.arg(arg);
         }
+
+        #[cfg(target_os = "macos")]
+        cmd.env("PROMPT", PROMPT_SIGN);
+
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
         drop(slave);
