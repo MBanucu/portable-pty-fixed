@@ -24,14 +24,17 @@ jobs:
       run: cargo build --verbose
 
     # - name: install bash
-    #   if: runner.os == 'ubuntu-latest'
+    #   if: runner.os == 'Windows'
     #   run: |
     #     choco install git -y --params '/GitAndUnixToolsOnPath /NoAutoCrlf'
     #     $env:Path += ";C:\Program Files\Git\usr\bin"
     #     bash --version
 
+    - name: get runner os
+      run: echo "${{runner.os}}"
+
     - name: Install zsh
-      if: runner.os == 'Ubuntu'
+      if: runner.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install -y zsh
 
     - name: Run tests
