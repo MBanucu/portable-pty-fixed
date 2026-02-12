@@ -12,10 +12,18 @@ mod tests {
 
     #[cfg(windows)]
     const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
+    #[cfg(windows)]
+    const SHELL_ARGS: &[&str] = &[];
+
     #[cfg(target_os = "macos")]
     const SHELL_COMMAND: &str = "zsh";
+    #[cfg(target_os = "macos")]
+    const SHELL_ARGS: &[&str] = &["-f"];
+    
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const SHELL_COMMAND: &str = "bash";
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    const SHELL_ARGS: &[&str] = &[];
 
     #[cfg(windows)]
     const NEWLINE: &[u8] = b"\r\n";
@@ -47,7 +55,10 @@ mod tests {
         let PtyPair { master, slave } = pair;
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
-        let cmd = CommandBuilder::new(SHELL_COMMAND);
+        let mut cmd = CommandBuilder::new(SHELL_COMMAND);
+        for arg in SHELL_ARGS {
+            let _ = cmd.arg(arg);
+        }
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
         drop(slave);
