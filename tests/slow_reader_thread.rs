@@ -203,6 +203,7 @@ mod tests {
                     // Because of the dropped writer, it has to be made sure that this is the last run of the loop
                     // so that the dropped writer can't be used by potentially following loops and cause panic.
                     // So a break statement has to follow after a drop statement in a loop.
+                    // Sofisticated other patterns would challenge the rust compiler and the small human brain.
                     loop {
                         match reader.read(&mut buffer) {
                             Ok(0) => break, // EOF
