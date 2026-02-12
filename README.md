@@ -158,6 +158,7 @@ So if you are on Linux or macOS then you do not have to do anything. If you run 
 The only problem is if you have to deal with Windows (`ConPTY`). Then the sequence is as follows:
 1. Make sure that the child exited, either by polling or by block-waiting.
 2. Drop the master or the writer to close the reader pipe.
+3. Wait for the reader thread to finish, it will read EOF and finish automatically.
 
 Hopefully there is only set an EOF signal at the end of the reader pipe by dropping master or writer and not signaling something like `STATUS_CONTROL_C_EXIT` to the pipe to make sure that a slow reader thread that has not yet fetched all the last bits of the reader pipe can read the pipe to the end. I will probably soon make this test with a thread that is on purpose slow and test if this race condition exists and spits into the soup or not.
 
@@ -168,3 +169,17 @@ Again: In Windows you have to drop the master or the writer to write EOF to the 
 
 ## macOS requires very active reader thread
 The child stops execution if reader thread is not reading. The reader thread has to be very responsive to make sure that the child is executing without unnecessary sleeps and waits. On Linux and Windows the child does only stop execution if the buffer of the reader pipe is full. This is the behavior of `zsh` on macOS. `zsh` on macOS is highly sofisticated (mis)configured. Maybe you can configure `zsh` on macOS to allow some space for the reader thread or maybe it is more deeply rooted in the macOS system. Another test with bash 3 did also show the same behavior. At the time of testing I thought that it would be the old bash version that is causing trouble so I switched to the native macOS supported and recommended shell `zsh`. It didn't "fix" it. Same problem, if you want to call it a problem. I didn't try other shells on macOS yet and I didn't try to update bash on macOS yet.
+
+## Full sequence how to deal with PTY pipes
+- Starup
+  - Spawn the child.
+  - Spawn the reader thread that continuously reads the pipe of the child and repipes it into another form of memory, that is easier to handle in the given development environment.
+- Main interactivity
+  - Do something (write something to the child pipe or not, you know best).
+- Shutdown
+  - Make sure that the child exited, either by polling or by block-waiting.
+  - Drop the master or the writer to close the reader pipe.
+  - Wait for the reader thread to finish, it will read EOF and finish gracefully.
+- Analysis
+  - After having all data ever produced by the child from start to finish, you can do stuff with it.
+  - You don't have to deal with flakyness of the data, all data will be available, no flaky truncation because of race conditions.
