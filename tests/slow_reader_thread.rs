@@ -163,7 +163,7 @@ mod tests {
                         SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
-                            .as_micros()
+                            .as_millis()
                     );
                     thread::sleep(Duration::from_millis(200));
                     println!(
@@ -171,7 +171,7 @@ mod tests {
                         SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
-                            .as_micros()
+                            .as_millis()
                     );
                     state += 1;
                 }
@@ -183,6 +183,13 @@ mod tests {
         println!("child exit status received");
 
         let child_exit_time = SystemTime::now();
+        println!(
+            "{}    [main thread] time of child exited",
+            child_exit_time
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        );
 
         println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
@@ -198,6 +205,13 @@ mod tests {
             }
         }
         let echo_exit_received_time = SystemTime::now();
+        println!(
+            "{}    [main thread] time of exit signal received from reader thread",
+            echo_exit_received_time
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        );
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
@@ -209,7 +223,10 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
-        let time_elapsed = echo_exit_received_time.duration_since(child_exit_time).unwrap().as_millis();
+        let time_elapsed = echo_exit_received_time
+            .duration_since(child_exit_time)
+            .unwrap()
+            .as_millis();
         assert!(time_elapsed > 100, "{}", time_elapsed);
 
         assert!(
