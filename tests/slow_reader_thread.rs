@@ -161,7 +161,7 @@ mod tests {
                         .write_all(NEWLINE)
                         .unwrap();
                     println!("stopping first reader thread");
-                    break;
+                    drop(master_writer_for_reader.lock().unwrap());
                 }
             }
         });
@@ -176,8 +176,6 @@ mod tests {
         println!("Waiting for bash to exit...");
         match rx_waiter.recv_timeout(Duration::from_millis(100)) {
             Err(e) => {
-                // macOS is expected to fail this test
-                #[cfg(not(target_os = "macos"))]
                 panic!("{}", e);
             }
             Ok(status) => {
