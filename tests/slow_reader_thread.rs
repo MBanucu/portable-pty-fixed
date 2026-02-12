@@ -186,7 +186,7 @@ mod tests {
                             .unwrap()
                             .as_millis()
                     );
-                    // drop the writer to be able to receive EOF (on Windows)
+                    // drop the ADDITIONAL lock reference to writer to be able to receive EOF (on Windows)
                     drop(master_writer_for_reader);
                     thread::sleep(Duration::from_millis(200));
                     println!(
