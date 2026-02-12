@@ -8,7 +8,6 @@ mod tests {
 
     use std::thread;
     use std::time::Duration;
-    
 
     #[test]
     #[timeout(5000)]
@@ -44,32 +43,32 @@ mod tests {
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
         drop(slave);
-        
+
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = master.try_clone_reader().unwrap();
         let mut master_writer = master.take_writer().unwrap();
 
-        
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-        
+
         // Send exit
         master_writer.write_all(b"exit").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
 
-        
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
-        
+
         println!("dropping ressources");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to ensure the reader thread can exit
 
+        println!("sleeping");
+        std::thread::sleep(Duration::from_millis(500));
+        
         println!("starting reader thread");
-
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
             let mut buffer = [0u8; 1024];
@@ -94,7 +93,6 @@ mod tests {
                 }
             }
         });
-
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
@@ -168,21 +166,19 @@ mod tests {
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
         drop(slave);
-        
+
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = master.try_clone_reader().unwrap();
         let mut master_writer = master.take_writer().unwrap();
 
-        
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-        
+
         // Send exit
         master_writer.write_all(b"exit").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-
 
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
@@ -209,14 +205,13 @@ mod tests {
                 }
             }
         });
-        
+
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
-        
+
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to ensure the reader thread can exit
-
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
