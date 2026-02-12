@@ -153,7 +153,7 @@ mod tests {
                             SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
                                 .unwrap()
-                                .as_micros()
+                                .as_millis()
                         );
                     });
                     println!("stopping first reader thread");
