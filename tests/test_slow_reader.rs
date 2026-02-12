@@ -129,6 +129,9 @@ mod tests {
                 }
                 if state == 3 && collected_output.contains(PROMPT_SIGN) {
                     println!("found {}", PROMPT_SIGN);
+                    let at = collected_output.find(PROMPT_SIGN).unwrap();
+                    collected_output = collected_output.split_off(at);
+                    state = 4;
                     // Send exit
                     println!("sending exit");
                     master_writer_for_reader
@@ -141,6 +144,9 @@ mod tests {
                         .unwrap()
                         .write_all(NEWLINE)
                         .unwrap();
+                }
+                if state == 4 && collected_output.contains("exit") {
+                    println!("found exit");
                     println!("stopping first reader trhead");
                     break;
                 }
