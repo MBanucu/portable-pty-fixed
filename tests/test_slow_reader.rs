@@ -9,9 +9,9 @@ mod tests {
     use std::thread;
 
     #[cfg(windows)]
-    const INTERACTIVE_PTY_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
+    const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
     #[cfg(target_os = "macos")]
-    const INTERACTIVE_PTY_COMMAND: &str = "zsh";
+    const SHELL_COMMAND: &str = "zsh";
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const SHELL_COMMAND: &str = "bash";
 
