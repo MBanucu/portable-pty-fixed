@@ -60,7 +60,6 @@ mod tests {
             let _ = cmd.arg(arg);
         }
 
-        #[cfg(target_os = "macos")]
         cmd.env("PROMPT", PROMPT_SIGN);
 
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
