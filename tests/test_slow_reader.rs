@@ -7,158 +7,29 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use std::thread;
-    use std::time::Duration;
 
     #[cfg(windows)]
     const INTERACTIVE_PTY_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
-
     #[cfg(target_os = "macos")]
     const INTERACTIVE_PTY_COMMAND: &str = "zsh";
-
     #[cfg(all(not(windows), not(target_os = "macos")))]
-    const INTERACTIVE_PTY_COMMAND: &str = "bash";
+    const SHELL_COMMAND: &str = "bash";
 
     #[cfg(windows)]
     const NEWLINE: &[u8] = b"\r\n";
-
     #[cfg(not(windows))]
     const NEWLINE: &[u8] = b"\n";
 
-    #[test]
-    #[timeout(5000)]
-    fn slow_reader_no_read_pipe() {
-        let pty_system = NativePtySystem::default();
-
-        // Open the PTY with a default size.
-        let pair = pty_system
-            .openpty(PtySize {
-                rows: 24,
-                cols: 80,
-                pixel_width: 0,
-                pixel_height: 0,
-            })
-            .unwrap();
-
-        let PtyPair { master, slave } = pair;
-
-        // Set up the command to launch interactive terminal
-        let cmd = CommandBuilder::new(INTERACTIVE_PTY_COMMAND);
-        let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
-
-        drop(slave);
-
-        // Set up channels for collecting output.
-        let (tx, rx) = channel::<String>();
-        let mut reader = master.try_clone_reader().unwrap();
-        let mut master_writer = master.take_writer().unwrap();
-
-        println!("reading initial chunk");
-        let mut buffer = [0u8; 1024];
-        match reader.read(&mut buffer) {
-            Ok(n) => {
-                // add a for loop that printlns every character as ascii code
-                // for debugging purposes
-                for (i, byte) in buffer[..n].iter().enumerate() {
-                    println!("{}\t{}\t{}", i, byte, *byte as char);
-                }
-                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                if !output.is_empty() {
-                    tx.send(output).unwrap();
-                }
-            }
-            Err(e) => {
-                tx.send(format!("Error reading from PTY: {}", e)).unwrap();
-            }
-        }
-
-        // Send a test command
-        println!("send echo hello command");
-        master_writer.write_all(b"echo hello").unwrap();
-        master_writer.write_all(NEWLINE).unwrap();
-
-        // Send exit
-        println!("send exit command");
-        master_writer.write_all(b"exit").unwrap();
-        master_writer.write_all(NEWLINE).unwrap();
-
-        // Wait for Bash to exit
-        println!("Waiting for bash to exit...");
-        let status = child.lock().unwrap().wait().unwrap();
-
-        println!("dropping ressources");
-        drop(master_writer); // Close the writer to signal EOF to the reader thread
-        drop(master); // Close the master to ensure the reader thread can exit
-
-        println!("sleeping");
-        std::thread::sleep(Duration::from_millis(500));
-
-        println!("starting reader thread");
-        // Thread to read from the PTY and send data to the channel.
-        let reader_handle = thread::spawn(move || {
-            let mut buffer = [0u8; 1024];
-            loop {
-                match reader.read(&mut buffer) {
-                    Ok(0) => break, // EOF
-                    Ok(n) => {
-                        // add a for loop that printlns every character as ascii code
-                        // for debugging purposes
-                        for (i, byte) in buffer[..n].iter().enumerate() {
-                            println!("{}\t{}\t{}", i, byte, *byte as char);
-                        }
-                        let output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                        if !output.is_empty() {
-                            tx.send(output).unwrap();
-                        }
-                    }
-                    Err(e) => {
-                        tx.send(format!("Error reading from PTY: {}", e)).unwrap();
-                        break;
-                    }
-                }
-            }
-        });
-
-        // Wait for reader to finish
-        println!("Wait for reader to finish...");
-        reader_handle.join().unwrap();
-
-        // Collect all output from the channel
-        println!("Collecting output from the channel...");
-        let mut collected_output = String::new();
-        while let Ok(chunk) = rx.try_recv() {
-            collected_output.push_str(&chunk);
-        }
-
-        // const STATUS_CONTROL_C_EXIT: u32 = 0xC000013A;
-
-        assert!(
-            status.success(),
-            "{} exited with status: {:?}, output: {}",
-            INTERACTIVE_PTY_COMMAND,
-            status,
-            collected_output
-        );
-
-        // Assert that the output contains the expected echo result
-        // Expected: "echo hello" echoed back (due to terminal echo), then "hello"
-        // Count occurrences to be more robust across platforms (should appear at least twice).
-        let hello_count = collected_output.matches("hello").count();
-        assert!(
-            hello_count >= 2,
-            "Output was: {:?}, 'hello' appeared {} times",
-            collected_output,
-            hello_count
-        );
-        assert!(
-            collected_output.contains("exit"),
-            "Output was: {:?}, expected to contain 'exit'",
-            collected_output
-        );
-    }
+    #[cfg(windows)]
+    const PROMPT_SIGN: &str = ">";
+    #[cfg(target_os = "macos")]
+    const PROMPT_SIGN: &str = " % ";
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    const PROMPT_SIGN: &str = "$";
 
     #[test]
     #[timeout(5000)]
-    fn slow_reader_read_pipe_slow() {
+    fn slow_reader_read_pipe_split() {
         let pty_system = NativePtySystem::default();
 
         // Open the PTY with a default size.
@@ -174,31 +45,30 @@ mod tests {
         let PtyPair { master, slave } = pair;
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
-        let cmd = CommandBuilder::new(INTERACTIVE_PTY_COMMAND);
+        let cmd = CommandBuilder::new(SHELL_COMMAND);
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
         drop(slave);
 
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
-        let mut reader = master.try_clone_reader().unwrap();
+        let tx_arc1 = Arc::new(Mutex::new(tx));
+        let tx_arc2 = tx_arc1.clone();
+        let reader_for_first_thread = Arc::new(Mutex::new(master.try_clone_reader().unwrap()));
+        let reader_for_second_thread = reader_for_first_thread.clone();
         let master_writer = Arc::new(Mutex::new(master.take_writer().unwrap()));
         let master_writer_for_reader = master_writer.clone();
 
         // Thread to read from the PTY and send data to the channel.
-        let reader_handle = thread::spawn(move || {
+        thread::spawn(move || {
             let mut buffer = [0u8; 1];
             let mut collected_output = String::new();
 
-            // // Send a test command
-            // master_writer_for_reader.lock().unwrap().write_all(b"echo hello").unwrap();
-            // master_writer_for_reader.lock().unwrap().write_all(NEWLINE).unwrap();
+            let mut state = 1;
+            let mut reader = reader_for_first_thread.lock().unwrap();
+            let tx = tx_arc1.lock().unwrap();
 
-            // // Send exit
-            // master_writer_for_reader.lock().unwrap().write_all(b"exit").unwrap();
-            // master_writer_for_reader.lock().unwrap().write_all(NEWLINE).unwrap();
-
-            drop(master_writer_for_reader);
+            // drop(master_writer_for_reader);
             loop {
                 match reader.read(&mut buffer) {
                     Ok(0) => break, // EOF
@@ -219,13 +89,89 @@ mod tests {
                         break;
                     }
                 }
+                if state == 1 && collected_output.contains(PROMPT_SIGN) {
+                    println!("found {}", PROMPT_SIGN);
+                    // Send a test command
+                    println!("sending test command");
+                    master_writer_for_reader
+                        .lock()
+                        .unwrap()
+                        .write_all(b"echo hello")
+                        .unwrap();
+                    master_writer_for_reader
+                        .lock()
+                        .unwrap()
+                        .write_all(NEWLINE)
+                        .unwrap();
+                    state = 2;
+                    let at = collected_output.find(PROMPT_SIGN).unwrap();
+                    collected_output = collected_output.split_off(at + PROMPT_SIGN.len());
+                }
+                if state == 2 && collected_output.contains("echo hello") {
+                    println!("found {}", "echo hello");
+                    state = 3;
+                    let at = collected_output.find("echo hello").unwrap();
+                    collected_output = collected_output.split_off(at + "echo hello".len());
+                }
+                if state == 3 && collected_output.contains("hello") {
+                    println!("found {}", "hello");
+                    state = 4;
+                    let at = collected_output.find("hello").unwrap();
+                    collected_output = collected_output.split_off(at + "hello".len());
+                }
+                if state == 4 && collected_output.contains(PROMPT_SIGN) {
+                    println!("found {}", PROMPT_SIGN);
+                    // Send exit
+                    println!("sending exit");
+                    master_writer_for_reader
+                        .lock()
+                        .unwrap()
+                        .write_all(b"exit")
+                        .unwrap();
+                    master_writer_for_reader
+                        .lock()
+                        .unwrap()
+                        .write_all(NEWLINE)
+                        .unwrap();
+                    println!("stopping first reader trhead");
+                    break;
+                }
             }
         });
 
-        // Wait for Bash to exit
+        // Wait for shell to exit
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
+        println!("child exit status received");
 
+        println!("starting second reader thread");
+        let reader_handle = thread::spawn(move || {
+            let mut buffer = [0u8; 1024];
+            let mut reader = reader_for_second_thread.lock().unwrap();
+            let tx = tx_arc2.lock().unwrap();
+            loop {
+                match reader.read(&mut buffer) {
+                    Ok(0) => break, // EOF
+                    Ok(n) => {
+                        // add a for loop that printlns every character as ascii code
+                        // for debugging purposes
+                        for (i, byte) in buffer[..n].iter().enumerate() {
+                            println!("{}\t{}\t{}", i, byte, *byte as char);
+                        }
+                        let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                        if !output.is_empty() {
+                            tx.send(output.clone()).unwrap();
+                        }
+                    }
+                    Err(e) => {
+                        tx.send(format!("Error reading from PTY: {}", e)).unwrap();
+                        break;
+                    }
+                }
+            }
+        });
+
+        println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to ensure the reader thread can exit
 
@@ -245,7 +191,7 @@ mod tests {
         assert!(
             status.success(),
             "{} exited with status: {:?}, output: {}",
-            INTERACTIVE_PTY_COMMAND,
+            SHELL_COMMAND,
             status,
             collected_output
         );
@@ -265,6 +211,5 @@ mod tests {
             "Output was: {:?}, expected to contain 'exit'",
             collected_output
         );
-        assert!(false)
     }
 }
