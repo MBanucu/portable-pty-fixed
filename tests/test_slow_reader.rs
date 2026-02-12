@@ -10,15 +10,19 @@ mod tests {
     use std::time::Duration;
 
     #[cfg(windows)]
-    const BASH_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
+    const INTERACTIVE_PTY_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
 
     #[cfg(target_os = "macos")]
-    const BASH_COMMAND: &str = "zsh";
+    const INTERACTIVE_PTY_COMMAND: &str = "zsh";
 
     #[cfg(all(not(windows), not(target_os = "macos")))]
-    const BASH_COMMAND: &str = "bash";
+    const INTERACTIVE_PTY_COMMAND: &str = "bash";
 
+    #[cfg(windows)]
     const NEWLINE: &[u8] = b"\r\n";
+
+    #[cfg(not(windows))]
+    const NEWLINE: &[u8] = b"\n";
 
     #[test]
     #[timeout(5000)]
@@ -37,8 +41,8 @@ mod tests {
 
         let PtyPair { master, slave } = pair;
 
-        // Set up the command to launch Bash with no profile, no rc, and empty prompt.
-        let cmd = CommandBuilder::new(BASH_COMMAND);
+        // Set up the command to launch interactive terminal
+        let cmd = CommandBuilder::new(INTERACTIVE_PTY_COMMAND);
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
         drop(slave);
@@ -130,7 +134,7 @@ mod tests {
         assert!(
             status.success(),
             "{} exited with status: {:?}, output: {}",
-            BASH_COMMAND,
+            INTERACTIVE_PTY_COMMAND,
             status,
             collected_output
         );
@@ -170,7 +174,7 @@ mod tests {
         let PtyPair { master, slave } = pair;
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
-        let cmd = CommandBuilder::new(BASH_COMMAND);
+        let cmd = CommandBuilder::new(INTERACTIVE_PTY_COMMAND);
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
         drop(slave);
@@ -237,7 +241,7 @@ mod tests {
         assert!(
             status.success(),
             "{} exited with status: {:?}, output: {}",
-            BASH_COMMAND,
+            INTERACTIVE_PTY_COMMAND,
             status,
             collected_output
         );
