@@ -41,6 +41,7 @@
             rustToolchain # includes cargo, rustc, rustfmt, clippy, rust-analyzer, ...
             pkg-config # helpful for FFI / native lib discovery
             bashInteractive # for a better shell experience
+            cargo-edit
           ];
 
           # Optional: extra environment variables if needed
