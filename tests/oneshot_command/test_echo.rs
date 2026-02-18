@@ -2,6 +2,7 @@
 mod tests {
     use ntest::timeout;
     use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
+    use core::panic;
     use std::io::{Read};
     use std::sync::mpsc::channel;
 
@@ -55,8 +56,7 @@ mod tests {
                         }
                     }
                     Err(e) => {
-                        tx.send(format!("Error reading from PTY: {}", e)).unwrap();
-                        break;
+                        panic!("Error reading from PTY: {:?}", e);
                     }
                 }
             }
