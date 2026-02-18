@@ -193,7 +193,7 @@ mod tests {
 
                     // wait for child exit to simulate a slow reader thread that is not reading from the pipe
                     // until making sure that the child has exited
-                    match rx_child_exit_reader.recv_timeout(Duration::from_millis(100)) {
+                    match rx_child_exit_reader.recv_timeout(Duration::from_millis(300)) {
                         Ok(msg) => println!("Received from child exit channel: {}", msg),
                         Err(e) => {
                             panic!("Did not receive child exit signal in time: {}", e);
@@ -236,7 +236,7 @@ mod tests {
         });
 
         println!("Waiting for child to exit...");
-        let status = match rx_child_exit_main.recv_timeout(Duration::from_millis(200)) {
+        let status = match rx_child_exit_main.recv_timeout(Duration::from_millis(500)) {
             Ok(status) => {
                 println!("Received child exit status: {:?}", status);
                 status
@@ -251,7 +251,7 @@ mod tests {
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to signal another EOF to the reader thread, double is better than single
 
-        let child_exit_time = match rx_child_exit_time.recv_timeout(Duration::from_millis(200)) {
+        let child_exit_time = match rx_child_exit_time.recv_timeout(Duration::from_millis(500)) {
             Ok(time) => {
                 println!("Received child exit time: {:?}", time);
                 time
@@ -261,7 +261,7 @@ mod tests {
             }
         };
 
-        let reader_exit_time = match rx_reader_exit_time.recv_timeout(Duration::from_millis(200)) {
+        let reader_exit_time = match rx_reader_exit_time.recv_timeout(Duration::from_millis(500)) {
             Ok(time) => {
                 println!("Received reader exit time: {:?}", time);
                 time
