@@ -211,7 +211,7 @@ mod tests {
                             Ok(0) => {
                                 tx_reader_exit_time.send(SystemTime::now()).unwrap();
                                 break; // EOF
-                            },
+                            }
                             Ok(n) => {
                                 // add a for loop that printlns every character as ascii code
                                 // for debugging purposes
@@ -282,12 +282,14 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
-        let time_elapsed = reader_exit_time
-            .duration_since(child_exit_time)
-            .unwrap()
-            .as_micros();
         #[cfg(not(target_os = "macos"))]
-        assert!(time_elapsed > 0, "time elapsed: {}", time_elapsed);
+        {
+            let time_elapsed = reader_exit_time
+                .duration_since(child_exit_time)
+                .unwrap()
+                .as_micros();
+            assert!(time_elapsed > 0, "time elapsed: {}", time_elapsed);
+        }
 
         assert!(
             status.success(),
