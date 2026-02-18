@@ -8,7 +8,7 @@ mod tests {
 
     use std::thread;
     
-    const BASH_COMMAND: &str = "echo";
+    const COMMAND: &str = "echo";
 
     #[test]
     #[timeout(5000)]
@@ -28,7 +28,7 @@ mod tests {
         let PtyPair { master, slave } = pair;
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
-        let mut cmd = CommandBuilder::new(BASH_COMMAND);
+        let mut cmd = CommandBuilder::new(COMMAND);
         cmd.arg("hello");
         let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
 
@@ -85,7 +85,7 @@ mod tests {
         assert!(
             status.success(),
             "{} exited with status: {:?}, output: {}",
-            BASH_COMMAND,
+            COMMAND,
             status,
             collected_output
         );
