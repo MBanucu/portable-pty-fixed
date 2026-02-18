@@ -129,16 +129,13 @@ impl std::future::Future for WinChild {
             Ok(Some(status)) => Poll::Ready(Ok(status)),
             Err(err) => Poll::Ready(Err(err).context("Failed to retrieve process exit status")),
             Ok(None) => {
-                struct PassRawHandleToWaiterThread(pub RawHandle);
-                unsafe impl Send for PassRawHandleToWaiterThread {}
-
                 let proc = self.proc.lock().unwrap().try_clone()?;
-                let handle = PassRawHandleToWaiterThread(proc.as_raw_handle());
+                let handle_raw = proc.as_raw_handle() as usize;
 
                 let waker = cx.waker().clone();
                 std::thread::spawn(move || {
                     unsafe {
-                        WaitForSingleObject(handle.0 as _, INFINITE);
+                        WaitForSingleObject(handle_raw as *mut _, INFINITE);
                     }
                     waker.wake();
                 });
