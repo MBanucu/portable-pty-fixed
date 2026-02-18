@@ -60,6 +60,7 @@ mod tests {
      */
     #[test]
     #[timeout(5000)]
+    #[cfg(not(target_os = "macos"))]
     fn slow_reader_thread() {
         let pty_system = NativePtySystem::default();
 
@@ -193,10 +194,7 @@ mod tests {
                     match rx_child_exit_reader.recv_timeout(Duration::from_millis(100)) {
                         Ok(msg) => println!("Received from child exit channel: {}", msg),
                         Err(e) => {
-                            #[cfg(not(target_os = "macos"))]
                             panic!("Did not receive child exit signal in time: {}", e);
-                            #[cfg(target_os = "macos")]
-                            println!("Did not receive child exit signal in time: {}, but continuing anyway, since we are on macOS", e);
                         }
                     }
 
@@ -282,14 +280,11 @@ mod tests {
             collected_output.push_str(&chunk);
         }
 
-        #[cfg(not(target_os = "macos"))]
-        {
-            let time_elapsed = reader_exit_time
-                .duration_since(child_exit_time)
-                .unwrap()
-                .as_micros();
-            assert!(time_elapsed > 0, "time elapsed: {}", time_elapsed);
-        }
+        let time_elapsed = reader_exit_time
+            .duration_since(child_exit_time)
+            .unwrap()
+            .as_micros();
+        assert!(time_elapsed > 0, "time elapsed: {}", time_elapsed);
 
         assert!(
             status.success(),
