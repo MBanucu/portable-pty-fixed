@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
+    use core::panic;
     use ntest::timeout;
     use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
-    use core::panic;
-    use std::io::{Read};
+    use std::io::Read;
     use std::sync::mpsc::channel;
 
     use std::thread;
-    
+
     const COMMAND: &str = "echo";
 
     #[test]
@@ -33,7 +33,7 @@ mod tests {
         let mut child = slave.spawn_command(cmd).unwrap();
 
         drop(slave);
-        
+
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = master.try_clone_reader().unwrap();
@@ -62,13 +62,11 @@ mod tests {
             }
         });
 
-        
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
         let status = child.wait().unwrap();
-        
-        drop(master); // Close the master to signal EOF to the reader pipe
 
+        drop(master); // Close the master to signal EOF to the reader pipe
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");

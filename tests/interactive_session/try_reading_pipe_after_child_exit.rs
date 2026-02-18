@@ -3,7 +3,7 @@ mod tests {
     use ntest::timeout;
     use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
     use std::io::{Read, Write};
-    use std::sync::mpsc::{channel};
+    use std::sync::mpsc::channel;
     use std::sync::{Arc, Mutex};
 
     use std::thread;

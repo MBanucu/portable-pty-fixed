@@ -6,7 +6,7 @@ mod tests {
     use std::sync::mpsc::channel;
 
     use std::thread;
-    
+
     #[cfg(windows)]
     const BASH_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
 
@@ -43,7 +43,7 @@ mod tests {
         let mut child = slave.spawn_command(cmd).unwrap();
 
         drop(slave);
-        
+
         // Set up channels for collecting output.
         let (tx, rx) = channel::<String>();
         let mut reader = master.try_clone_reader().unwrap();
@@ -73,23 +73,20 @@ mod tests {
             }
         });
 
-        
         // Send a test command
         master_writer.write_all(b"echo hello").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
-        
+
         // Send exit
         master_writer.write_all(b"exit").unwrap();
         master_writer.write_all(NEWLINE).unwrap();
 
-        
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
         let status = child.wait().unwrap();
-        
+
         drop(master_writer); // Close the writer to signal EOF to the reader pipe
         drop(master); // Close the master to signal EOF to the reader pipe (double safety)
-
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
