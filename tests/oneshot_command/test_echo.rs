@@ -12,7 +12,7 @@ mod tests {
 
     #[test]
     #[timeout(5000)]
-    fn test_bash_example() {
+    fn test_echo() {
         let pty_system = NativePtySystem::default();
 
         // Open the PTY with a default size.
