@@ -226,7 +226,7 @@ mod tests {
                 // Collect all output from the channel
                 println!("Collecting output from the channel...");
                 let mut collected_output = String::new();
-                while let Ok(chunk) = rx.try_recv() {
+                while let Ok(chunk) = rx.recv() {
                     collected_output.push_str(&chunk);
                 }
 
