@@ -60,6 +60,10 @@ mod tests {
      */
     #[test]
     #[timeout(5000)]
+    // simulating slow reader on macOS does not make sense
+    // macOS is somehow making sure that reading pipe EOF and child exit are somewhat synchronized
+    // so there is no data lost in the pipe after child exit
+    // by making sure that a pipe reader is reading all data before allowing child to execute its end
     #[cfg(not(target_os = "macos"))]
     fn slow_reader_thread() {
         let pty_system = NativePtySystem::default();
