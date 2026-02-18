@@ -162,11 +162,9 @@ pub fn close_random_fds() {
                 .map(|e| e.file_name())
                 .and_then(|s| s.into_string().ok())
                 .and_then(|n| n.parse::<libc::c_int>().ok())
-            {
-                if num > 2 {
+                && num > 2 {
                     fds.push(num);
                 }
-            }
         }
         for fd in fds {
             unsafe {
