@@ -90,8 +90,7 @@ mod tests {
         );
 
         // Assert that the output contains the expected echo result
-        // Expected: "echo hello" echoed back (due to terminal echo), then "hello"
-        // Count occurrences to be more robust across platforms (should appear at least twice).
+        // Expected: "hello", no echoing of the command itself
         let hello_count = collected_output.matches("hello").count();
         assert!(
             hello_count == 1,
