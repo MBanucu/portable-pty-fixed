@@ -42,7 +42,7 @@ mod tests {
      */
     #[test]
     #[timeout(5000)]
-    fn try_reading_after_child_exit() {
+    fn try_reading_pipe_after_child_exit() {
         let pty_system = NativePtySystem::default();
 
         // Open the PTY with a default size.
