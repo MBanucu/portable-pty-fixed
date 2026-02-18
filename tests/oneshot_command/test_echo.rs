@@ -94,7 +94,7 @@ mod tests {
         // Count occurrences to be more robust across platforms (should appear at least twice).
         let hello_count = collected_output.matches("hello").count();
         assert!(
-            hello_count >= 1,
+            hello_count == 1,
             "Output was: {:?}, 'hello' appeared {} times",
             collected_output,
             hello_count
