@@ -7,4 +7,5 @@ mod interactive_session {
 
 mod oneshot_command {
     mod test_echo;
+    mod test_kill;
 }
