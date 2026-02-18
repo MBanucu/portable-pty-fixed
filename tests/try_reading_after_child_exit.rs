@@ -20,9 +20,9 @@ mod tests {
     const SHELL_ARGS: &[&str] = &["-f"];
 
     #[cfg(all(not(windows), not(target_os = "macos")))]
-    const SHELL_COMMAND: &str = "zsh";
+    const SHELL_COMMAND: &str = "bash";
     #[cfg(all(not(windows), not(target_os = "macos")))]
-    const SHELL_ARGS: &[&str] = &["-f"];
+    const SHELL_ARGS: &[&str] = &[];
 
     #[cfg(windows)]
     const NEWLINE: &[u8] = b"\r\n";
