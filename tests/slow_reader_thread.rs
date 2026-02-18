@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
     use ntest::timeout;
-    use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
+    use portable_pty::{CommandBuilder, ExitStatus, NativePtySystem, PtyPair, PtySize, PtySystem};
     use std::io::{Read, Write};
     use std::sync::mpsc::channel;
     use std::sync::{Arc, Mutex};
 
     use std::thread;
-    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    use std::time::{Duration, SystemTime};
 
     #[cfg(windows)]
     const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
@@ -94,6 +94,19 @@ mod tests {
         let master_writer = Arc::new(Mutex::new(master.take_writer().unwrap()));
         let master_writer_for_reader = master_writer.clone();
 
+        let (tx_child_exit_reader, rx_child_exit_reader) = channel::<ExitStatus>();
+        let (tx_child_exit_main, rx_child_exit_main) = channel::<ExitStatus>();
+
+        let (tx_child_exit_time, rx_child_exit_time) = channel::<SystemTime>();
+        let (tx_reader_exit_time, rx_reader_exit_time) = channel::<SystemTime>();
+
+        thread::spawn(move || {
+            let status = child.lock().unwrap().wait().unwrap();
+            tx_child_exit_time.send(SystemTime::now()).unwrap();
+            tx_child_exit_main.send(status.clone()).unwrap();
+            tx_child_exit_reader.send(status.clone()).unwrap();
+        });
+
         // Thread to read from the PTY and send data to the channel.
         let reader_handle = thread::spawn(move || {
             let mut buffer = [0u8; 1024];
@@ -105,7 +118,7 @@ mod tests {
 
             loop {
                 match reader.read(&mut buffer) {
-                    Ok(0) => break, // EOF
+                    Ok(0) => panic!("Unexpected EOF"), // EOF
                     Ok(n) => {
                         // add a for loop that printlns every character as ascii code
                         // for debugging purposes
@@ -116,12 +129,11 @@ mod tests {
                         if !output.is_empty() {
                             tx.send(output.clone()).unwrap();
                             collected_output.push_str(&output);
-                            println!("collected_output: {}", collected_output)
+                            println!("collected_output: {}", collected_output);
                         }
                     }
                     Err(e) => {
-                        tx.send(format!("Error reading from PTY: {}", e)).unwrap();
-                        break;
+                        panic!("Error reading from PTY: {}", e);
                     }
                 }
                 let mut find_str = PROMPT_SIGN;
@@ -170,34 +182,24 @@ mod tests {
                         println!("sending exit");
                         writer.lock().unwrap().write_all(b"exit").unwrap();
                         writer.lock().unwrap().write_all(NEWLINE).unwrap();
-                        println!(
-                            "{}    [exit writer thread] time of exit written",
-                            SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .unwrap()
-                                .as_millis()
-                        );
                     });
-                    println!("stopping first reader thread");
-                    println!(
-                        "{}    [reader thread] time of start being slow",
-                        SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis()
-                    );
                     // drop the ADDITIONAL lock reference to writer to be able to receive EOF (on Windows)
                     // Do not drop the moved/main writer in the reader loop (on Windows), it will kill the child (on Windows),
                     // when you still want to read data from the pipe.
                     drop(master_writer_for_reader);
-                    thread::sleep(Duration::from_millis(200));
-                    println!(
-                        "{}    [reader thread] time of continuing reading",
-                        SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis()
-                    );
+
+                    // wait for child exit to simulate a slow reader thread that is not reading from the pipe
+                    // until making sure that the child has exited
+                    match rx_child_exit_reader.recv_timeout(Duration::from_millis(100)) {
+                        Ok(msg) => println!("Received from child exit channel: {}", msg),
+                        Err(e) => {
+                            #[cfg(not(target_os = "macos"))]
+                            panic!("Did not receive child exit signal in time: {}", e);
+                            #[cfg(target_os = "macos")]
+                            println!("Did not receive child exit signal in time: {}, but continuing anyway, since we are on macOS", e);
+                        }
+                    }
+
                     // Continue the reader loop in this inner scope to make the code memory management safe,
                     // or you could say: to make rust happy.
                     // Because of the dropped writer, it has to be made sure that this is the last run of the loop
@@ -206,7 +208,10 @@ mod tests {
                     // Sophisticated other patterns would challenge the rust compiler and the small human brain.
                     loop {
                         match reader.read(&mut buffer) {
-                            Ok(0) => break, // EOF
+                            Ok(0) => {
+                                tx_reader_exit_time.send(SystemTime::now()).unwrap();
+                                break; // EOF
+                            },
                             Ok(n) => {
                                 // add a for loop that printlns every character as ascii code
                                 // for debugging purposes
@@ -217,12 +222,11 @@ mod tests {
                                 if !output.is_empty() {
                                     tx.send(output.clone()).unwrap();
                                     collected_output.push_str(&output);
-                                    println!("collected_output: {}", collected_output)
+                                    println!("collected_output: {}", collected_output);
                                 }
                             }
                             Err(e) => {
-                                tx.send(format!("Error reading from PTY: {}", e)).unwrap();
-                                break;
+                                panic!("Error reading from PTY: {}", e);
                             }
                         }
                     }
@@ -232,56 +236,58 @@ mod tests {
         });
 
         println!("Waiting for child to exit...");
-        let status = child.lock().unwrap().wait().unwrap();
+        let status = match rx_child_exit_main.recv_timeout(Duration::from_millis(200)) {
+            Ok(status) => {
+                println!("Received child exit status: {:?}", status);
+                status
+            }
+            Err(e) => {
+                panic!("Did not receive child exit signal in time: {}", e);
+            }
+        };
         println!("child exit status received");
-
-        let child_exit_time = SystemTime::now();
-        println!(
-            "{}    [main thread] time of child exited",
-            child_exit_time
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis()
-        );
 
         println!("dropping writer and master");
         drop(master_writer); // Close the writer to signal EOF to the reader thread
         drop(master); // Close the master to signal another EOF to the reader thread, double is better than single
 
-        // Collect all output from the channel
-        println!("Collecting output from the channel...");
-        let mut collected_output = String::new();
-        while let Ok(chunk) = rx.recv() {
-            collected_output.push_str(&chunk);
-            if collected_output.contains("exit") {
-                break;
+        let child_exit_time = match rx_child_exit_time.recv_timeout(Duration::from_millis(200)) {
+            Ok(time) => {
+                println!("Received child exit time: {:?}", time);
+                time
             }
-        }
-        let echo_exit_received_time = SystemTime::now();
-        println!(
-            "{}    [main thread] time of exit signal received from reader thread",
-            echo_exit_received_time
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis()
-        );
+            Err(e) => {
+                panic!("Did not receive child exit time signal in time: {}", e);
+            }
+        };
+
+        let reader_exit_time = match rx_reader_exit_time.recv_timeout(Duration::from_millis(200)) {
+            Ok(time) => {
+                println!("Received reader exit time: {:?}", time);
+                time
+            }
+            Err(e) => {
+                panic!("Did not receive reader exit time signal in time: {}", e);
+            }
+        };
 
         // Wait for reader to finish
         println!("Wait for reader to finish...");
         reader_handle.join().unwrap();
 
         // Collect all output from the channel
-        println!("Collecting more output from the channel...");
-        while let Ok(chunk) = rx.try_recv() {
+        println!("Collecting output from the channel...");
+        let mut collected_output = String::new();
+        while let Ok(chunk) = rx.recv() {
             collected_output.push_str(&chunk);
         }
 
-        let time_elapsed = echo_exit_received_time
+        let time_elapsed = reader_exit_time
             .duration_since(child_exit_time)
             .unwrap()
-            .as_millis();
+            .as_micros();
         #[cfg(not(target_os = "macos"))]
-        assert!(time_elapsed > 100, "time elapsed: {}", time_elapsed);
+        assert!(time_elapsed > 0, "time elapsed: {}", time_elapsed);
 
         assert!(
             status.success(),
