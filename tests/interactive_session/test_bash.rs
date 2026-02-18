@@ -4,7 +4,6 @@ mod tests {
     use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
     use std::io::{Read, Write};
     use std::sync::mpsc::channel;
-    use std::sync::{Arc, Mutex};
 
     use std::thread;
     
@@ -41,7 +40,7 @@ mod tests {
 
         // Set up the command to launch Bash with no profile, no rc, and empty prompt.
         let cmd = CommandBuilder::new(BASH_COMMAND);
-        let child = Arc::new(Mutex::new(slave.spawn_command(cmd).unwrap()));
+        let mut child = slave.spawn_command(cmd).unwrap();
 
         drop(slave);
         
@@ -68,8 +67,7 @@ mod tests {
                         }
                     }
                     Err(e) => {
-                        tx.send(format!("Error reading from PTY: {}", e)).unwrap();
-                        break;
+                        panic!("Error reading from PTY: {:?}", e);
                     }
                 }
             }
@@ -87,7 +85,7 @@ mod tests {
         
         // Wait for Bash to exit
         println!("Waiting for bash to exit...");
-        let status = child.lock().unwrap().wait().unwrap();
+        let status = child.wait().unwrap();
         
         drop(master_writer); // Close the writer to signal EOF to the reader pipe
         drop(master); // Close the master to signal EOF to the reader pipe (double safety)
