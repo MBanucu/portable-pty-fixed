@@ -86,8 +86,8 @@ mod tests {
         println!("Waiting for bash to exit...");
         let status = child.lock().unwrap().wait().unwrap();
         
-        drop(master_writer); // Close the writer to signal EOF to the reader thread
-        drop(master); // Close the master to ensure the reader thread can exit
+        drop(master_writer); // Close the writer to signal EOF to the reader pipe
+        drop(master); // Close the master to signal EOF to the reader pipe (double safety)
 
 
         // Wait for reader to finish
@@ -100,8 +100,6 @@ mod tests {
         while let Ok(chunk) = rx.try_recv() {
             collected_output.push_str(&chunk);
         }
-
-        // const STATUS_CONTROL_C_EXIT: u32 = 0xC000013A;
 
         assert!(
             status.success(),
