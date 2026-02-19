@@ -46,7 +46,8 @@ mod tests {
         rx_waiting.recv().unwrap();
 
         // Kill the child process
-        killer.kill().unwrap();
+        let kill_result = killer.kill();
+        eprintln!("DEBUG: kill_result = {:?}", kill_result);
 
         // Wait for the exit status
         let wait_result = rx_exit_status.recv().unwrap();
@@ -64,5 +65,27 @@ mod tests {
             "Process should have been killed, but exited with: {}",
             status
         );
+    }
+
+    #[test]
+    #[timeout(5000)]
+    fn test_kill_return_value() {
+        let shell_session = setup_shell_session().unwrap();
+        let mut child = shell_session.child;
+
+        let mut killer = child.clone_killer();
+
+        let result = killer.kill();
+
+        eprintln!("DEBUG: kill() returned: {:?}", result);
+
+        assert!(
+            result.is_ok(),
+            "kill() should succeed when killing a running process, but got: {:?}",
+            result
+        );
+
+        let status = child.wait().unwrap();
+        assert!(!status.success(), "Process should have been killed");
     }
 }
