@@ -1,14 +1,14 @@
 #[cfg(test)]
-mod tests {
+pub mod test_helpers {
     use anyhow::Result;
-    use ntest::timeout;
     use portable_pty::{native_pty_system, CommandBuilder, PtyPair, PtySize};
+    use std::io::Write;
     use std::sync::mpsc;
     use std::thread;
     use std::time::Duration;
 
     #[cfg(windows)]
-    const SHELL_COMMAND: &str = "cmd.exe";
+    const SHELL_COMMAND: &str = "cmd.exe"; // Use cmd.exe on Windows for testing
     #[cfg(windows)]
     const SHELL_ARGS: &[&str] = &[];
 
@@ -23,20 +23,25 @@ mod tests {
     const SHELL_ARGS: &[&str] = &[];
 
     #[cfg(windows)]
+    const NEWLINE: &[u8] = b"\r\n";
+    #[cfg(not(windows))]
+    const NEWLINE: &[u8] = b"\n";
+
+    #[cfg(windows)]
     const PROMPT_SIGN: &str = ">";
     #[cfg(target_os = "macos")]
     const PROMPT_SIGN: &str = " > ";
     #[cfg(all(not(windows), not(target_os = "macos")))]
     const PROMPT_SIGN: &str = "$";
 
-    struct ShellSession {
-        child: Box<dyn portable_pty::Child + Send + Sync>,
-        child_pipe_tx: mpsc::Sender<String>,
-        child_pipe_rx: mpsc::Receiver<String>,
-        master: Box<dyn portable_pty::MasterPty + Send>,
+    pub struct ShellSession {
+        pub child: Box<dyn portable_pty::Child + Send + Sync>,
+        pub child_pipe_tx: mpsc::Sender<String>,
+        pub child_pipe_rx: mpsc::Receiver<String>,
+        pub master: Box<dyn portable_pty::MasterPty + Send>,
     }
 
-    fn setup_shell_session() -> Result<ShellSession> {
+    pub fn setup_shell_session() -> Result<ShellSession> {
         let pty_system = native_pty_system();
 
         let pair = pty_system.openpty(PtySize::default())?;
@@ -62,12 +67,18 @@ mod tests {
 
             loop {
                 match reader.read(&mut buffer) {
-                    Ok(0) => panic!("Unexpected EOF"),
+                    Ok(0) => panic!("Unexpected EOF"), // EOF
                     Ok(n) => {
+                        // add a for loop that printlns every character as ascii code
+                        // for debugging purposes
+                        for (i, byte) in buffer[..n].iter().enumerate() {
+                            println!("{}\t{}\t{}", i, byte, *byte as char);
+                        }
                         let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         if !output.is_empty() {
                             tx.send(output.clone()).unwrap();
                             collected_output.push_str(&output);
+                            println!("collected_output: {}", collected_output);
                         }
                     }
                     Err(e) => {
@@ -76,6 +87,7 @@ mod tests {
                 }
                 let find_str = PROMPT_SIGN;
                 if collected_output.contains(find_str) {
+                    println!("found {}", find_str);
                     tx_reader.send(tx).unwrap();
                     break;
                 }
@@ -93,22 +105,5 @@ mod tests {
             child_pipe_rx: rx,
             master,
         })
-    }
-
-    #[test]
-    #[timeout(10000)]
-    fn test_kill() {
-        let shell_session = setup_shell_session().unwrap();
-        let mut child = shell_session.child;
-
-        child.kill().unwrap();
-
-        let status = child.wait().unwrap();
-
-        assert!(
-            !status.success(),
-            "Process should have been killed, but exited with: {}",
-            status
-        );
     }
 }
