@@ -1,7 +1,7 @@
 use crate::{Child, ChildKiller, ExitStatus};
 use anyhow::Context as _;
 use std::io::{Error as IoError, Result as IoResult};
-use std::os::windows::io::{AsRawHandle, RawHandle};
+use std::os::windows::io::AsRawHandle;
 use std::pin::Pin;
 use std::sync::Mutex;
 use std::task::{Context, Poll};
