@@ -43,6 +43,7 @@ pub fn setup_shell_session() -> Result<ShellSession> {
 
     let pair = pty_system.openpty(PtySize::default())?;
     let PtyPair { master, slave } = pair;
+    let mut reader = master.try_clone_reader()?;
     let mut cmd = CommandBuilder::new(SHELL_COMMAND);
 
     for arg in SHELL_ARGS {
@@ -56,7 +57,6 @@ pub fn setup_shell_session() -> Result<ShellSession> {
 
     let (mut tx, rx) = mpsc::channel();
     let (tx_reader, rx_reader) = mpsc::channel();
-    let mut reader = master.try_clone_reader()?;
 
     thread::spawn(move || {
         let mut buffer = [0u8; 1024];
