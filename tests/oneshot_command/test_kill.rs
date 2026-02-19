@@ -4,7 +4,7 @@ mod tests {
     use portable_pty::test_helpers::setup_shell_session;
 
     #[test]
-    #[timeout(10000)]
+    #[timeout(5000)]
     fn test_kill() {
         let shell_session = setup_shell_session().unwrap();
         let mut child = shell_session.child;
@@ -21,7 +21,7 @@ mod tests {
     }
 
     #[test]
-    #[timeout(10000)]
+    #[timeout(5000)]
     fn test_wait_before_kill() {
         let shell_session = setup_shell_session().unwrap();
         let mut child = shell_session.child;
