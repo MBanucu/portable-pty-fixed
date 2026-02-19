@@ -1,4 +1,4 @@
-use crate::{native_pty_system, CommandBuilder, PtyPair, PtySize};
+use crate::{CommandBuilder, PtyPair, PtySize, native_pty_system};
 use anyhow::Result;
 use std::sync::mpsc;
 use std::thread;
@@ -47,7 +47,7 @@ pub fn setup_shell_session() -> Result<ShellSession> {
     let mut cmd = CommandBuilder::new(SHELL_COMMAND);
 
     for arg in SHELL_ARGS {
-        let _ = cmd.arg(arg);
+        cmd.arg(arg);
     }
 
     cmd.env("PROMPT", PROMPT_SIGN);
@@ -66,6 +66,12 @@ pub fn setup_shell_session() -> Result<ShellSession> {
             match reader.read(&mut buffer) {
                 Ok(0) => panic!("Unexpected EOF"),
                 Ok(n) => {
+                    // add a for loop that printlns every character as ascii code
+                    // for debugging purposes
+                    // for (i, byte) in buffer[..n].iter().enumerate() {
+                    //     println!("{}\t{}\t{}", i, byte, *byte as char);
+                    // }
+
                     let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                     if !output.is_empty() {
                         tx.send(output.clone()).unwrap();
