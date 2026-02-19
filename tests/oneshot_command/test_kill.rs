@@ -1,13 +1,12 @@
 #[cfg(test)]
 mod tests {
     use ntest::timeout;
-
-    include!("../test_helpers.rs");
+    use portable_pty::test_helpers::setup_shell_session;
 
     #[test]
     #[timeout(10000)]
     fn test_kill() {
-        let shell_session = test_helpers::setup_shell_session().unwrap();
+        let shell_session = setup_shell_session().unwrap();
         let mut child = shell_session.child;
 
         child.kill().unwrap();

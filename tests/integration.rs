@@ -1,5 +1,4 @@
 // tests/integration.rs
-mod test_helpers;
 
 mod interactive_session {
     mod slow_reader_thread;
