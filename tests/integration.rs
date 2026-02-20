@@ -9,4 +9,5 @@ mod interactive_session {
 mod oneshot_command {
     mod test_echo;
     mod test_kill;
+    mod test_wait_before_kill_stress;
 }
