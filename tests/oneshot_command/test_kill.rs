@@ -6,7 +6,7 @@ mod tests {
     #[test]
     #[timeout(5000)]
     fn test_kill() {
-        let shell_session = setup_shell_session().unwrap();
+        let shell_session = setup_shell_session(std::time::Duration::from_millis(1000)).unwrap();
         let mut child = shell_session.child;
 
         child.kill().unwrap();
@@ -23,7 +23,7 @@ mod tests {
     #[test]
     #[timeout(5000)]
     fn test_wait_before_kill() {
-        let shell_session = setup_shell_session().unwrap();
+        let shell_session = setup_shell_session(std::time::Duration::from_millis(1000)).unwrap();
         let mut child = shell_session.child;
 
         let mut killer = child.clone_killer();
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     #[timeout(5000)]
     fn test_kill_return_value() {
-        let shell_session = setup_shell_session().unwrap();
+        let shell_session = setup_shell_session(std::time::Duration::from_millis(1000)).unwrap();
         let mut child = shell_session.child;
 
         let mut killer = child.clone_killer();

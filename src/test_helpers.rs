@@ -38,7 +38,7 @@ pub struct ShellSession {
     pub master: Box<dyn crate::MasterPty + Send>,
 }
 
-pub fn setup_shell_session() -> Result<ShellSession> {
+pub fn setup_shell_session(timeout: Duration) -> Result<ShellSession> {
     let pty_system = native_pty_system();
 
     let pair = pty_system.openpty(PtySize::default())?;
@@ -89,7 +89,7 @@ pub fn setup_shell_session() -> Result<ShellSession> {
         }
     });
 
-    tx = match rx_reader.recv_timeout(Duration::from_millis(1000)) {
+    tx = match rx_reader.recv_timeout(timeout) {
         Ok(tx) => tx,
         Err(_) => panic!("Timeout waiting for shell prompt"),
     };

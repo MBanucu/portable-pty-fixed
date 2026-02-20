@@ -11,7 +11,7 @@ mod tests {
     const SLOW_THRESHOLD_DURATION: std::time::Duration = std::time::Duration::from_millis(SLOW_THRESHOLD_MS as u64);
 
     fn run_iteration(tx_debug_info: std::sync::mpsc::Sender<String>) -> Result<(), String> {
-        let shell_session = setup_shell_session().map_err(|e| e.to_string())?;
+        let shell_session = setup_shell_session(SLOW_THRESHOLD_DURATION).map_err(|e| e.to_string())?;
         let mut child = shell_session.child;
 
         let mut killer = child.clone_killer();
@@ -25,7 +25,7 @@ mod tests {
         std::thread::spawn(move || {
             barrier_clone.wait();
 
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            std::thread::sleep(std::time::Duration::from_millis(500));
             tx_debug_info_clone.send(format!("waiting for child process to exit")).unwrap();
             let wait_result = child.wait();
 
